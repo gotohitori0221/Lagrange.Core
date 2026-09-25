@@ -23,11 +23,12 @@
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。
 - 移除了无用的中间缓存及多余构建垃圾，专注交付稳定运行的二进制。
 
-### 3. 全平台直接下载
-只针对 `Lagrange.Milky` 构建，支持所有主流桌面与服务器平台：
-- **Windows**：`win-x64`、`win-x86`、`win-arm64`
-- **Linux**：`linux-x64`、`linux-arm`（支持树莓派等 32 位嵌入式）、`linux-arm64`
-- **macOS**：`osx-x64`（Intel Mac）、`osx-arm64`（Apple Silicon M 系列）
+### 3. 纯正单文件构建（Single-File）与全平台支持
+- **真正的一键单文件**：开启了 `-p:PublishSingleFile=true` 与原生自解压嵌入，去除了所有零散 PDB 符号及零散依赖 DLL，压缩包解压后**只有唯一的一个独立可执行文件**（Windows 下为 `Lagrange.Milky.exe`，Linux/macOS 下为 `Lagrange.Milky`），开箱即用，极其清爽！
+- **全平台架构覆盖**：只针对 `Lagrange.Milky` 构建，支持所有主流桌面与服务器平台：
+  - **Windows**：`win-x64`、`win-x86`、`win-arm64`
+  - **Linux**：`linux-x64`、`linux-arm`（支持树莓派等 32 位嵌入式）、`linux-arm64`
+  - **macOS**：`osx-x64`（Intel Mac）、`osx-arm64`（Apple Silicon M 系列）
 
 ---
 

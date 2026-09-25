@@ -58,6 +58,10 @@ jobs:
             -r "${{ matrix.rid }}" \
             --self-contained ${{ matrix.self_contained }} \
             -p:PublishAot=false \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
             --no-restore \
             -o "$OUTPUT_DIR"
 
