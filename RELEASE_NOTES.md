@@ -1,31 +1,34 @@
-# Lagrange.Core V2 / Milky Nightly 构建说明
+# Lagrange.Milky 社区维护版 - Nightly 构建说明
 
-欢迎使用 Lagrange.Core V2 与 Milky 的最新 Nightly 构建！
-
-这次版本我们花了不少时间做底层的协议对齐、隐蔽 Bug 修复以及跨平台自动化打包。如果你需要开箱即用、无需配置环境的体验，可以直接下载下方对应平台的 **自带运行时（self-contained）** 压缩包；如果你本地已有 .NET 10 环境并希望追求极小体积，可以选择 **不自带运行时（framework-dependent）** 版本。
+> 📢 **声明**：本项目属于**社区维护版本（非官方版本）**，由开源社区爱好者根据 Milky 协议规范进行跟进、重构与修复，纯属为爱发电。
 
 ---
 
-## 🛠️ 本次主要更新与细节打磨
+大家好！这是 Lagrange.Milky 的最新 Nightly 构建版本。
 
-### 1. Milky 协议全面对齐（65 个 API，21 个 Event 满血支持）
-- **获取好友历史消息修复**：此前如果不传 `start_message_seq`，接口会直接触发 `NotSupportedException` 报错退出。现在已接入本地消息存储的时序推导，无参数时也能从容拉取最新私聊历史。
-- **URL 尾部斜杠容错**：处理了类似 `/api/get_login_info/` 末尾带斜杠导致路由意外 404 的小坑，调用更省心。
-- **点赞接口场景扩充**：`send_profile_like` 此前仅从好友列表中检索 UID，现已增加陌生人信息回退查询，现在也能给群成员或非好友正常点赞了。
-- **群通知字段规范**：修复了 `get_group_notifications` 在没有下一页序号时 `next_notification_seq` 输出显式 `null` 的问题，严格遵循按需序列化。
+如果你只是想开箱即用、不想在机器上折腾任何 .NET 环境，直接在下方 Assets 列表里下载你对应系统和芯片的 **`self-contained`（自带运行时）** 压缩包即可，解压后直接运行；如果你本机已经装好了 .NET 10，也可以选择体积小很多的 **`framework-dependent`** 版本。全部包体均为直接的 `.tar.gz` 格式。
+
+---
+
+## 💡 本次更新内容（做了一些微小的工作）
+
+### 1. Milky 协议全量对齐与异常修复
+- **好友历史消息查询平滑化**：修复了调用 `get_history_messages`（场景为好友）且不传 `start_message_seq` 时直接炸 `NotSupportedException` 的问题。现在本地存储会自动根据最新记录推导起始序列号，无参也能正常拉取好友消息记录。
+- **URL 路径结尾斜杠容错**：处理了类似 `/api/get_login_info/` 末尾带 `/` 时路由直接返回 404 的问题，增加了路径清洗。
+- **名片点赞接口支持陌生人**：此前 `send_profile_like` 只查好友列表，给群友或非好友点赞会因为找不到目标而报错。现在增加了陌生人信息回退机制，群成员点赞也能正常工作了。
+- **群通知字段按需序列化**：修复了 `get_group_notifications` 在没有下一页通知序号时显式吐出 `"next_notification_seq": null` 的毛病，严格遵循规范仅在有值时返回。
 - **富媒体与转发消息健全**：理顺了合并转发多层消息的解析与打包逻辑，以及 Markdown 实体防重复渲染。
 
-### 2. 代码库与结构净化
-- 彻底清理了历史代码中各种杂乱的调试注释、临时注记与失效文档，整体工程结构更加清爽利落。
-- 梳理了 `.gitignore` 与构建依赖，隔离所有本地临时数据库、缓存与构建垃圾。
+### 2. 代码仓库整洁化
+- 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。
+- 移除了无用的中间缓存及多余构建垃圾，专注交付稳定运行的二进制。
 
-### 3. 跨平台打包与全架构支持
-所有可执行文件均统一打包为纯正的 `.tar.gz` 格式（解压即可直接使用，不再受 GitHub Actions 网页双重套 zip 的困扰）：
-- **Windows**：支持 `win-x64`、`win-x86`、`win-arm64`
-- **Linux**：支持 `linux-x64`、`linux-arm`（树莓派等 32 位嵌入式）、`linux-arm64`
-- **macOS**：支持 `osx-x64`（Intel Mac）、`osx-arm64`（Apple Silicon M 系列）
-- **发布版本**：每种架构均分为 `self-contained`（自带运行时）与 `framework-dependent`（依赖已安装的 .NET 10）
+### 3. 全平台直接下载
+只针对 `Lagrange.Milky` 构建，支持所有主流桌面与服务器平台：
+- **Windows**：`win-x64`、`win-x86`、`win-arm64`
+- **Linux**：`linux-x64`、`linux-arm`（支持树莓派等 32 位嵌入式）、`linux-arm64`
+- **macOS**：`osx-x64`（Intel Mac）、`osx-arm64`（Apple Silicon M 系列）
 
 ---
 
-> 💡 **提示**：Nightly 构建由 CI 自动流转生成。使用过程中遇到任何问题或体验不顺畅的地方，欢迎随时反馈提 Issue！
+如果在日常使用中遇到问题，欢迎向仓库反馈 Issue！

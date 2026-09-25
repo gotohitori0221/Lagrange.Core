@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [Lagrange.Milky, Lagrange.Core.Runner]
+        project: [Lagrange.Milky]
         rid:
           - win-x64
           - win-x86
@@ -87,11 +87,24 @@ jobs:
           path: all_dist
           merge-multiple: true
 
+      - name: Clean old non-Milky assets
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        shell: bash
+        run: |
+          gh release view nightly --json assets --jq '.assets[] | select(.name | contains("Lagrange.Core.Runner")) | .name' | while read -r asset; do
+            if [ -n "$asset" ]; then
+              echo "Removing old asset: $asset"
+              gh release delete-asset nightly "$asset" -y || true
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish Release or Nightly
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'nightly' }}
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && format('Release {0}', github.ref_name) || 'Nightly Build' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && format('Release {0}', github.ref_name) || 'Lagrange.Milky 社区维护版 - Nightly Build' }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
           body_path: RELEASE_NOTES.md
           files: all_dist/*.tar.gz
