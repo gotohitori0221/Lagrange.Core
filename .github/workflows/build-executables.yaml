@@ -26,7 +26,6 @@ jobs:
           - win-x86
           - win-arm64
           - linux-x64
-          - linux-x86
           - linux-arm
           - linux-arm64
           - osx-x64
@@ -51,10 +50,15 @@ jobs:
           RUNTIME_MODE="${{ matrix.self_contained && 'self-contained' || 'framework-dependent' }}"
           PKG_NAME="${{ matrix.project }}-${{ matrix.rid }}-${RUNTIME_MODE}"
           
+          dotnet restore "${{ matrix.project }}/${{ matrix.project }}.csproj" \
+            -r "${{ matrix.rid }}"
+
           dotnet publish "${{ matrix.project }}/${{ matrix.project }}.csproj" \
             -c Release \
             -r "${{ matrix.rid }}" \
             --self-contained ${{ matrix.self_contained }} \
+            -p:PublishAot=false \
+            --no-restore \
             -o "$OUTPUT_DIR"
 
           mkdir -p dist
