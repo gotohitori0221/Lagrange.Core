@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Lagrange.Proto.Generator": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\Lagrange.Proto.Runner\\Lagrange.Proto.Runner.csproj"
+    }
+  }
+}

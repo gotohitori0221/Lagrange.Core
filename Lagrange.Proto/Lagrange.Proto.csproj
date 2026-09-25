@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>13</LangVersion>
+        <IsPackable>true</IsPackable>
+        <Version>1.0.10</Version>
+        <Authors>Linwenxuan04</Authors>
+        <Description>The Blazing-fast Code-first C# Google Protocol Buffer Serializer</Description>
+        <RepositoryType>git</RepositoryType>
+        <PackageProjectUrl>https://github.com/LagrangeDev/LagrangeV2</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/LagrangeDev/LagrangeV2</RepositoryUrl>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\Proto.md" Pack="true" PackagePath="\README.md"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="Serialization\Metadata\ProtoTypeResolver.WellKnownTypes.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>ProtoTypeResolver.WellKnownTypes.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Serialization\Metadata\ProtoTypeResolver.WellKnownTypes.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ProtoTypeResolver.WellKnownTypes.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
+</Project>

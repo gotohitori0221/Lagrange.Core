@@ -1,0 +1,48 @@
+<#@ template language="C#" #>
+<#
+Type[] numberTypes = [
+    typeof(sbyte),
+    typeof(byte),
+    typeof(short),
+    typeof(ushort),
+    typeof(int),
+    typeof(uint),
+    typeof(long),
+    typeof(ulong),
+    typeof(float),
+    typeof(double)
+    ];
+#>
+using Lagrange.Proto.Serialization.Converter;
+
+namespace Lagrange.Proto.Serialization.Metadata;
+
+public static partial class ProtoTypeResolver
+{
+    private static void RegisterWellKnownTypes()
+    {
+        Register(new ProtoBooleanConverter()); // Do not change the order of this line as it would be referenced by the nullable converter below
+
+<# foreach(var item in numberTypes) { #>
+        Register(new ProtoNumberConverter<<#= item.Name #>>());
+<# } #>
+
+<# foreach(var item in numberTypes) { #>
+        Register(new ProtoNullableConverter<<#= item.Name #>>());
+<# } #>
+        Register(new ProtoNullableConverter<bool>());
+
+        Register(new ProtoStringConverter());
+        Register(new ProtoBytesConverter());
+        Register(new ProtoReadOnlyMemoryByteConverter());
+        Register(new ProtoReadOnlyMemoryCharConverter());
+        Register(new ProtoMemoryByteConverter());
+        Register(new ProtoMemoryCharConverter());
+
+        Register(new ProtoRawValueConverter());
+        Register(new ProtoValueConverter());
+        Register(new ProtoArrayConverter());
+        Register(new ProtoObjectConverter());
+        Register(new ProtoNodeConverter());
+    }
+}

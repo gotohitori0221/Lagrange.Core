@@ -1,0 +1,86 @@
+name: Build Executables
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.project }} (${{ matrix.rid }}, ${{ matrix.self_contained && 'Self-Contained' || 'Framework-Dependent' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [Lagrange.Milky, Lagrange.Core.Runner]
+        rid:
+          - win-x64
+          - win-x86
+          - win-arm64
+          - linux-x64
+          - linux-x86
+          - linux-arm
+          - linux-arm64
+          - osx-x64
+          - osx-arm64
+        self_contained: [true, false]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Publish ${{ matrix.project }}
+        shell: bash
+        run: |
+          OUTPUT_DIR="publish_out"
+          RUNTIME_MODE="${{ matrix.self_contained && 'self-contained' || 'framework-dependent' }}"
+          PKG_NAME="${{ matrix.project }}-${{ matrix.rid }}-${RUNTIME_MODE}"
+          
+          dotnet publish "${{ matrix.project }}/${{ matrix.project }}.csproj" \
+            -c Release \
+            -r "${{ matrix.rid }}" \
+            --self-contained ${{ matrix.self_contained }} \
+            -o "$OUTPUT_DIR"
+
+          mkdir -p dist
+          tar -czvf "dist/${PKG_NAME}.tar.gz" -C "$OUTPUT_DIR" .
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.project }}-${{ matrix.rid }}-${{ matrix.self_contained && 'self-contained' || 'framework-dependent' }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all_dist
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: all_dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

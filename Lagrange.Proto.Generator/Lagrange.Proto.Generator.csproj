@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <IsRoslynComponent>true</IsRoslynComponent>
+        <AssemblyName>Lagrange.Proto.Generator</AssemblyName>
+        <IsPackable>true</IsPackable>
+        <RootNamespace>Lagrange.Proto.Generator</RootNamespace>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>latest</LangVersion>
+        <AnalyzerLanguage>cs</AnalyzerLanguage>
+        <DevelopmentDependency>true</DevelopmentDependency>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>13</LangVersion>
+        <NoWarn>CS1574</NoWarn>
+        <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+        <Description>Source Generator for Lagrange.Proto</Description>
+        <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <Version>1.0.4</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\Proto.md" Pack="true" PackagePath="\README.md"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" PrivateAssets="all" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <Compile Include="..\Lagrange.Proto\Serialization\WireType.cs" Link="Serialization\WireType.cs" />
+        <Compile Include="..\Lagrange.Proto\Serialization\ProtoNumberHandling.cs" Link="Serialization\ProtoNumberHandling.cs" />
+    </ItemGroup>
+</Project>

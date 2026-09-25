@@ -1,0 +1,32 @@
+name: Nuget push Lagrange.Proto.Generator
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "Lagrange.Proto.Generator/Lagrange.Proto.Generator.csproj"
+  workflow_dispatch:
+
+jobs:
+  nuget-push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: Linwenxuan04
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10'
+      
+      - run: dotnet pack -c Release -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg Lagrange.Proto.Generator
+
+      - run: dotnet nuget push ./Lagrange.Proto.Generator/bin/Release/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}

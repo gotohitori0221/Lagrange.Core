@@ -1,0 +1,45 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+**/bin/
+**/obj/
+
+# Visual Studio / VS Code / Rider
+.vs/
+.vscode/
+.idea/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+/.devcontainer
+/global.json
+
+# Databases & Runtime Data
+*.db
+*.db-shm
+*.db-wal
+*.log
+keystore.json
+
+# Test Results
+TestResults/
+[Tt]est[Rr]esult*/
+
+# Packages
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/

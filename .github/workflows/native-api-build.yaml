@@ -1,0 +1,77 @@
+﻿name: Build Lagrange.Core.NativeAPI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - Lagrange.Codec/**
+      - Lagrange.Core/**
+      - Lagrange.Proto/**
+      - Lagrange.Proto.Generator/**
+      - Lagrange.Core.NativeAPI/**
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - Lagrange.Codec/**
+      - Lagrange.Core/**
+      - Lagrange.Proto/**
+      - Lagrange.Proto.Generator/**
+      - Lagrange.Core.NativeAPI/**
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            binary-extension: '.dll'
+          - os: windows-latest
+            rid: win-arm64
+            binary-extension: '.dll'
+          - os: macos-latest
+            rid: osx-x64
+            binary-extension: '.dylib'
+          - os: macos-latest
+            rid: osx-arm64
+            binary-extension: '.dylib'
+          - os: ubuntu-latest
+            rid: linux-x64
+            binary-extension: '.so'
+          - os: ubuntu-22.04-arm
+            rid: linux-arm64
+            binary-extension: '.so'
+
+    env:
+      RUNTIME_IDENTIFIER: ${{ matrix.rid }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10'
+
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-22.04-arm'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev
+
+      - name: Publish with Native AOT
+        run: dotnet publish Lagrange.Core.NativeAPI -c Release -r ${{ matrix.rid }}
+
+      - name: Upload artifacts
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lagrange.Core.NativeAPI-${{ matrix.rid }}
+          path: Lagrange.Core.NativeAPI/bin/Release/net9.0/${{ matrix.rid }}/publish/Lagrange.Core.NativeAPI${{ matrix.binary-extension }}

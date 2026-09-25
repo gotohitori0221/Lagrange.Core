@@ -1,0 +1,21 @@
+namespace Lagrange.Core.Exceptions;
+
+
+
+
+public class ServiceNotFoundException : LagrangeException
+{
+    public ServiceNotFoundException(string command) : base($"Protocol service not found for command: {command}")
+    {
+        Command = command;
+    }
+
+    public ServiceNotFoundException(Type eventType) : base($"Protocol service not found for event type: {eventType}")
+    {
+        EventType = eventType;
+    }
+
+    public string? Command { get; }
+
+    public Type? EventType { get; }
+}

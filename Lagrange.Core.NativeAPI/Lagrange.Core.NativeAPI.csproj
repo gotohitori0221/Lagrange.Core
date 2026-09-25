@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PublishAot>true</PublishAot>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Lagrange.Core\Lagrange.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <TrimmerRootAssembly Include="Lagrange.Core" Preserve="All"/>
+    </ItemGroup>
+
+</Project>

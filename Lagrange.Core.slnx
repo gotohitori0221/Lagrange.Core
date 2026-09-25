@@ -1,0 +1,33 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Core/">
+    <Project Path="Lagrange.Core.NativeAPI.Test/Lagrange.Core.NativeAPI.Test.csproj" />
+    <Project Path="Lagrange.Core.NativeAPI/Lagrange.Core.NativeAPI.csproj" />
+    <Project Path="Lagrange.Core.Generator/Lagrange.Core.Generator.csproj" />
+    <Project Path="Lagrange.Core.Runner/Lagrange.Core.Runner.csproj" />
+    <Project Path="Lagrange.Core.Test/Lagrange.Core.Test.csproj" />
+    <Project Path="Lagrange.Core/Lagrange.Core.csproj" />
+  </Folder>
+  <Folder Name="/Proto/">
+    <Project Path="Lagrange.Proto.Benchmark/Lagrange.Proto.Benchmark.csproj" />
+    <Project Path="Lagrange.Proto.CodeGen/Lagrange.Proto.CodeGen.csproj" />
+    <Project Path="Lagrange.Proto.Generator/Lagrange.Proto.Generator.csproj" />
+    <Project Path="Lagrange.Proto.Runner/Lagrange.Proto.Runner.csproj" />
+    <Project Path="Lagrange.Proto.Test/Lagrange.Proto.Test.csproj" />
+    <Project Path="Lagrange.Proto/Lagrange.Proto.csproj" />
+  </Folder>
+  <Folder Name="/Protocols.Milky/">
+    <Project Path="Lagrange.Milky/Lagrange.Milky.csproj" />
+    <Project Path="Lagrange.Milky.Generator/Lagrange.Milky.Generator.csproj" />
+    <!-- <Project Path="Lagrange.Milky.Implementation.Api.Generator/Lagrange.Milky.Implementation.Api.Generator.csproj" /> -->
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Proto.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="Lagrange.Codec/Lagrange.Codec.csproj" />
+</Solution>
