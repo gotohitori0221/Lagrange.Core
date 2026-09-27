@@ -17,6 +17,8 @@ public class ImageEntity : RichMediaEntityBase
 
     internal override Lazy<Stream>? Stream { get; }
     
+    private string? _fallbackUrl;
+    
     public Vector2 ImageSize { get; set; }
     
     public int SubType { get; init; }
@@ -70,11 +72,21 @@ public class ImageEntity : RichMediaEntityBase
     {
         if (!string.IsNullOrEmpty(FileUrl)) return;
 
-        NTV2RichMediaDownloadEventResp result = message.IsGroup()
-            ? await context.EventContext.SendEvent<ImageGroupDownloadEventResp>(new ImageGroupDownloadEventReq(message, this))
-            : await context.EventContext.SendEvent<ImageDownloadEventResp>(new ImageDownloadEventReq(message, this));
-        
-        FileUrl = result.Url;
+        try
+        {
+            NTV2RichMediaDownloadEventResp result = message.IsGroup()
+                ? await context.EventContext.SendEvent<ImageGroupDownloadEventResp>(new ImageGroupDownloadEventReq(message, this))
+                : await context.EventContext.SendEvent<ImageDownloadEventResp>(new ImageDownloadEventReq(message, this));
+            
+            FileUrl = result.Url;
+        }
+        catch
+        {
+            if (!string.IsNullOrEmpty(_fallbackUrl))
+            {
+                FileUrl = BuildUrl(_fallbackUrl);
+            }
+        }
     }
 
     public override string ToPreviewString() =>
@@ -128,37 +140,55 @@ public class ImageEntity : RichMediaEntityBase
             var info = msgInfo.MsgInfoBody[0].Index.Info;
 
             string? compatUrl = null;
+            uint compatSize = 0;
             foreach (var elem in elements)
             {
                 if (elem.CustomFace is { Md5: { Length: > 0 } faceMd5 } compatFace &&
                     Convert.ToHexString(faceMd5).Equals(info.FileHash, StringComparison.OrdinalIgnoreCase))
                 {
                     compatUrl = compatFace.OrigUrl;
+                    compatSize = compatFace.Size;
                     break;
                 }
                 if (elem.NotOnlineImage is { PicMd5: { Length: > 0 } picMd5 } compatImage &&
                     Convert.ToHexString(picMd5).Equals(info.FileHash, StringComparison.OrdinalIgnoreCase))
                 {
                     compatUrl = compatImage.OrigUrl;
+                    compatSize = compatImage.FileLen;
                     break;
                 }
             }
 
-            return new ImageEntity
+            var entity = new ImageEntity
             {
                 MsgInfo = msgInfo,
-                FileUrl = string.IsNullOrEmpty(compatUrl) ? string.Empty : BuildUrl(compatUrl),
+                _fallbackUrl = compatUrl,
+                FileUrl = string.Empty,
                 ImageSize = new Vector2(info.Width, info.Height),
                 SubType = (int)msgInfo.ExtBizInfo.Pic.BizType,
                 Summary = string.IsNullOrEmpty(msgInfo.ExtBizInfo.Pic.TextSummary) ? "[图片]" : msgInfo.ExtBizInfo.Pic.TextSummary,
             };
+
+            if (entity.FileSize == 0 && compatSize != 0)
+            {
+                entity.FileSize = compatSize;
+            }
+
+            return entity;
         }
 
         if (target.NotOnlineImage is { } image)
         {
+            string md5 = image.PicMd5 is { Length: > 0 } ? Convert.ToHexString(image.PicMd5) : string.Empty;
+            if (!string.IsNullOrEmpty(md5) && HasMatchingCommonElem(elements, md5))
+            {
+                return null;
+            }
+
             return new ImageEntity
             {
                 ImageSize = new Vector2(image.PicWidth, image.PicHeight),
+                FileSize = image.FileLen,
                 FileUrl = string.IsNullOrEmpty(image.OrigUrl) ? string.Empty : BuildUrl(image.OrigUrl),
                 SubType = (int)image.BizType,
             };
@@ -166,15 +196,48 @@ public class ImageEntity : RichMediaEntityBase
 
         if (target.CustomFace is { } face)
         {
+            string md5 = face.Md5 is { Length: > 0 } ? Convert.ToHexString(face.Md5) : string.Empty;
+            if (!string.IsNullOrEmpty(md5) && HasMatchingCommonElem(elements, md5))
+            {
+                return null;
+            }
+
             return new ImageEntity
             {
                 ImageSize = new Vector2(face.Width, face.Height),
+                FileSize = face.Size,
                 FileUrl = string.IsNullOrEmpty(face.OrigUrl) ? string.Empty : BuildUrl(face.OrigUrl),
                 SubType = face.BizType,
             };
         }
 
         return null;
+    }
+
+    private static bool HasMatchingCommonElem(List<Elem> elements, string fileHash)
+    {
+        foreach (var elem in elements)
+        {
+            if (elem.CommonElem is { BusinessType: 10 or 20 } ce)
+            {
+                try
+                {
+                    var msgInfo = ProtoHelper.Deserialize<MsgInfo>(ce.PbElem.Span);
+                    if (msgInfo.MsgInfoBody.Count > 0 &&
+                        msgInfo.MsgInfoBody[0].Index?.Info?.FileHash is { } hash &&
+                        hash.Equals(fileHash, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+        }
+
+        return false;
     }
 
     private static string BuildUrl(string origUrl) =>
