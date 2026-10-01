@@ -28,6 +28,46 @@ Lagrange.Milky 在启动阶段（`ConfigureLagrange`）集成了向签名服务�
    - **保底回退**：若远程请求失败或未配置 Signer，自动回退到 Core 库内置的默认硬编码协议信息（`BotAppInfo.ProtocolToAppInfo[Platform]`）。
 5. **作用与价值**：使 Bot 运行时协议版本、QUA 指纹与远程签名服务算法版本严格对齐，有效规避因本地协议硬编码版本过旧而导致的签名校验失败或风控拦截。
 
+## 协议平台与签名服务配置
+
+协议类型与签名服务地址均可通过 `appsettings.json` 的 `Lagrange.Protocol` 节点配置，无需改动代码：
+
+- **协议类型**：`Platform` 字段决定使用的协议，取值范围为：
+
+| Platform | 说明 | 使用签名配置 |
+| --- | --- | --- |
+| `Windows` / `MacOS` / `Linux` | PC 协议（默认 `Linux`） | `Signer` |
+| `AndroidPhone` / `AndroidPad` / `AndroidWatch` | 安卓协议（手机 / 平板 / 手表） | `AndroidSigner` |
+
+- **PC 签名服务**：`Protocol.Signer`，仅当 `Platform` 为 PC 端时生效。
+- **安卓签名服务**：`Protocol.AndroidSigner`，仅当 `Platform` 为安卓端时生效，需要签名服务端提供 `/sign`、`/energy`、`/get_tlv553` 三个接口。
+
+示例（选用安卓协议）：
+
+```jsonc
+{
+    "Lagrange": {
+        "Protocol": {
+            "Platform": "AndroidPhone",
+            "AndroidSigner": {
+                "BaseUrl": "http://127.0.0.1:8081",
+                "Token": ""
+                // "ProxyUrl": null // url, only http
+            }
+        },
+        "Login": {
+            "Uin": 10001,
+            "Password": "your_password" // 安卓协议需要密码登录
+        }
+    }
+}
+```
+
+运行时程序会依据 `Platform` 自动分流：
+
+1. **签名器选择**：安卓平台注入 `AndroidHttpSigner`（对齐 Core 的 `AndroidBotSignProvider`），PC 平台注入 `HttpSigner`。
+2. **AppInfo 获取**：仅 PC 平台会向 `Signer` 拉取 `appinfo_v2` 协议指纹；安卓平台直接使用内置的安卓协议信息（`BotAppInfo.ProtocolToAppInfo`）或 `Protocol.AppInfo` 自定义覆盖，避免误用 PC 指纹导致登录失败。
+
 ---
 
 ## 实现情况清单 (Milky v1.3)
