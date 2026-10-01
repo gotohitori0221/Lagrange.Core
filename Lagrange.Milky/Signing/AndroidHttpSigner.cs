@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Mime;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 using Lagrange.Core.Common;
 using Lagrange.Milky.Configurations;
@@ -20,10 +21,12 @@ public sealed class AndroidHttpSigner : AndroidBotSignProvider, IDisposable
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "WhiteListCommand")]
     private static extern ref HashSet<string> GetAndroidWhiteListCommand([UnsafeAccessorType("Lagrange.Core.Common.DefaultAndroidBotSignProvider, Lagrange.Core")] object? _);
 
+    private readonly long _uin;
     private readonly HttpClient _http;
 
     public AndroidHttpSigner(LagrangeConfiguration configuration)
     {
+        _uin = configuration.Login.Uin;
         var signer = configuration.Protocol.AndroidSigner;
 
         _http = new HttpClient(new HttpClientHandler
@@ -34,11 +37,12 @@ public sealed class AndroidHttpSigner : AndroidBotSignProvider, IDisposable
         })
         {
             BaseAddress = new Uri(signer.NormalizedBaseUrl),
-            DefaultRequestHeaders =
-            {
-                Authorization = new AuthenticationHeaderValue("Bearer", signer.Token)
-            }
         };
+
+        if (!string.IsNullOrEmpty(signer.Token))
+        {
+            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signer.Token);
+        }
     }
 
     private string Qua => string.IsNullOrEmpty(Context.AppInfo.Qua) ? DefaultQua : Context.AppInfo.Qua;
@@ -47,21 +51,20 @@ public sealed class AndroidHttpSigner : AndroidBotSignProvider, IDisposable
 
     public override async Task<SsoSecureInfo?> GetSecSign(long uin, string cmd, int seq, ReadOnlyMemory<byte> body)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "sign")
+        using var request = new HttpRequestMessage(HttpMethod.Post, "sign/sec-sign")
         {
             Content = new StringContent(
-                Serializer.JsonSerialize(new AndroidSecSignRequest
+                Serializer.JsonSerialize(new SecSignRequest
                 {
-                    Uin = uin,
-                    Cmd = cmd,
-                    Seq = seq,
-                    Buffer = Convert.ToHexString(body.Span),
-                    Guid = Convert.ToHexString(Context.Keystore.Guid),
-                    Version = Context.AppInfo.PtVersion,
-                    Qua = Qua
+                    Uin = uin == 0 ? _uin : uin,
+                    Command = cmd,
+                    Sequence = seq,
+                    Body = Convert.ToHexString(body.Span).ToLower(),
+                    Guid = Convert.ToHexString(Context.Keystore.Guid).ToLower(),
+                    Qua = Qua,
                 }),
-                Encoding.UTF8,
-                "application/json"
+                System.Text.Encoding.UTF8,
+                MediaTypeNames.Application.Json
             )
         };
 
@@ -69,100 +72,141 @@ public sealed class AndroidHttpSigner : AndroidBotSignProvider, IDisposable
         if (!response.IsSuccessStatusCode) return null;
 
         using var stream = await response.Content.ReadAsStreamAsync();
-        var result = await Serializer.JsonDeserializeAsync<AndroidSignerResponse<AndroidSignResult>>(stream);
-        if (result?.Data == null) return null;
+        var result = await Serializer.JsonDeserializeAsync<SignerResponse<SecSignResult>>(stream);
+        if (result == null || result.Code != 0) return null;
 
         return new SsoSecureInfo
         {
-            SecSign = FromHexOrEmpty(result.Data.Sign),
-            SecToken = FromHexOrEmpty(result.Data.Token),
-            SecExtra = FromHexOrEmpty(result.Data.Extra)
+            SecSign = FromHexOrEmpty(result.Value.SecSign),
+            SecToken = FromHexOrEmpty(result.Value.SecToken),
+            SecExtra = FromHexOrEmpty(result.Value.SecExtra)
         };
     }
 
-    public override Task<byte[]> GetEnergy(long uin, string data)
-        => PostForHex("energy", new AndroidEnergyRequest
-        {
-            Uin = uin,
-            Data = data,
-            Guid = Convert.ToHexString(Context.Keystore.Guid),
-            Ver = Context.AppInfo.SdkInfo.SdkVersion,
-            Version = Context.AppInfo.PtVersion,
-            Qua = Qua
-        });
-
-    public override Task<byte[]> GetDebugXwid(long uin, string data)
-        => PostForHex("get_tlv553", new AndroidDebugXwidRequest
-        {
-            Uin = uin,
-            Data = data,
-            Guid = Convert.ToHexString(Context.Keystore.Guid),
-            Version = Context.AppInfo.PtVersion,
-            Qua = Qua
-        });
-
-    private async Task<byte[]> PostForHex<T>(string path, T payload)
+    public static async Task<BotAppInfo?> FetchAppInfoAsync(LagrangeConfiguration configuration, CancellationToken ct = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, path)
+        var signer = configuration.Protocol.AndroidSigner;
+        if (string.IsNullOrEmpty(signer.BaseUrl)) return null;
+
+        using var http = new HttpClient(new HttpClientHandler
         {
-            Content = new StringContent(Serializer.JsonSerialize(payload), Encoding.UTF8, "application/json")
+            Proxy = signer.ProxyUrl != null
+                ? new WebProxy { Address = new Uri(signer.ProxyUrl) }
+                : null
+        })
+        {
+            BaseAddress = new Uri(signer.NormalizedBaseUrl)
         };
 
-        using var response = await _http.SendAsync(request);
-        if (!response.IsSuccessStatusCode) return [];
+        if (!string.IsNullOrEmpty(signer.Token))
+        {
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signer.Token);
+        }
 
-        using var stream = await response.Content.ReadAsStreamAsync();
-        var result = await Serializer.JsonDeserializeAsync<AndroidSignerResponse<string>>(stream);
-        return FromHexOrEmpty(result?.Data);
+        try
+        {
+            using var response = await http.GetAsync("sign/sec-sign/appinfo_v2", ct);
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync(ct);
+            var result = await Serializer.JsonDeserializeAsync<SignerResponse<AppInfoResult>>(stream);
+            if (result == null || result.Code != 0) return null;
+
+            var v = result.Value;
+            return new BotAppInfo
+            {
+                Os = v.Os,
+                Kernel = v.Kernel,
+                VendorOs = v.VendorOs,
+                Qua = v.Qua,
+                CurrentVersion = v.CurrentVersion,
+                PtVersion = v.PtVersion,
+                SsoVersion = v.SsoVersion,
+                PackageName = v.PackageName,
+                ApkSignatureMd5 = FromHexOrEmpty(v.ApkSignatureMd5),
+                AppId = v.AppId,
+                SubAppId = v.SubAppId,
+                AppClientVersion = (ushort)v.AppClientVersion,
+                SdkInfo = new WtLoginSdkInfo
+                {
+                    SdkBuildTime = (uint)v.SdkInfo.SdkBuildTime,
+                    SdkVersion = v.SdkInfo.SdkVersion,
+                    MiscBitMap = (uint)v.SdkInfo.MiscBitMap,
+                    SubSigMap = (uint)v.SdkInfo.SubSigMap,
+                    MainSigMap = (Sig)v.SdkInfo.MainSigMap,
+                }
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public override async Task<byte[]> GetEnergy(long uin, string data)
+    {
+        try
+        {
+            var payload = new JsonObject
+            {
+                ["uin"] = uin == 0 ? _uin : uin,
+                ["data"] = data,
+                ["guid"] = Convert.ToHexString(Context.Keystore.Guid).ToLower(),
+                ["ver"] = Context.AppInfo.SdkInfo.SdkVersion,
+                ["version"] = Context.AppInfo.PtVersion,
+                ["qua"] = Qua
+            };
+
+            using var response = await _http.PostAsync("energy", new StringContent(payload.ToJsonString(), System.Text.Encoding.UTF8, "application/json"));
+            if (!response.IsSuccessStatusCode) return [];
+
+            var str = await response.Content.ReadAsStringAsync();
+            var node = JsonNode.Parse(str);
+            var val = node?["data"]?.ToString() ?? node?["value"]?.ToString();
+            return FromHexOrEmpty(val);
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public override async Task<byte[]> GetDebugXwid(long uin, string data)
+    {
+        try
+        {
+            var payload = new JsonObject
+            {
+                ["uin"] = uin == 0 ? _uin : uin,
+                ["data"] = data,
+                ["guid"] = Convert.ToHexString(Context.Keystore.Guid).ToLower(),
+                ["version"] = Context.AppInfo.PtVersion,
+                ["qua"] = Qua
+            };
+
+            using var response = await _http.PostAsync("get_tlv553", new StringContent(payload.ToJsonString(), System.Text.Encoding.UTF8, "application/json"));
+            if (!response.IsSuccessStatusCode) return [];
+
+            var str = await response.Content.ReadAsStringAsync();
+            var node = JsonNode.Parse(str);
+            var val = node?["data"]?.ToString() ?? node?["value"]?.ToString();
+            return FromHexOrEmpty(val);
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     private static byte[] FromHexOrEmpty(string? hex)
-        => string.IsNullOrEmpty(hex) ? [] : Convert.FromHexString(hex);
+    {
+        if (string.IsNullOrEmpty(hex)) return [];
+        try { return Convert.FromHexString(hex); }
+        catch { return []; }
+    }
 
     public void Dispose()
     {
         _http.Dispose();
     }
-}
-
-public class AndroidSecSignRequest
-{
-    [JsonPropertyName("uin")] public required long Uin { get; init; }
-    [JsonPropertyName("cmd")] public required string Cmd { get; init; }
-    [JsonPropertyName("seq")] public required int Seq { get; init; }
-    [JsonPropertyName("buffer")] public required string Buffer { get; init; }
-    [JsonPropertyName("guid")] public required string Guid { get; init; }
-    [JsonPropertyName("version")] public required string Version { get; init; }
-    [JsonPropertyName("qua")] public required string Qua { get; init; }
-}
-
-public class AndroidEnergyRequest
-{
-    [JsonPropertyName("uin")] public required long Uin { get; init; }
-    [JsonPropertyName("data")] public required string Data { get; init; }
-    [JsonPropertyName("guid")] public required string Guid { get; init; }
-    [JsonPropertyName("ver")] public required string Ver { get; init; }
-    [JsonPropertyName("version")] public required string Version { get; init; }
-    [JsonPropertyName("qua")] public required string Qua { get; init; }
-}
-
-public class AndroidDebugXwidRequest
-{
-    [JsonPropertyName("uin")] public required long Uin { get; init; }
-    [JsonPropertyName("data")] public required string Data { get; init; }
-    [JsonPropertyName("guid")] public required string Guid { get; init; }
-    [JsonPropertyName("version")] public required string Version { get; init; }
-    [JsonPropertyName("qua")] public required string Qua { get; init; }
-}
-
-public class AndroidSignerResponse<T>
-{
-    [JsonPropertyName("data")] public required T Data { get; init; }
-}
-
-public class AndroidSignResult
-{
-    [JsonPropertyName("sign")] public required string Sign { get; init; }
-    [JsonPropertyName("token")] public required string Token { get; init; }
-    [JsonPropertyName("extra")] public required string Extra { get; init; }
 }

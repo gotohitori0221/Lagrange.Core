@@ -56,11 +56,6 @@ public static partial class Serializer
     [JsonSerializable(typeof(SecSignRequest))]
     [JsonSerializable(typeof(SignerResponse<SecSignResult>))]
     [JsonSerializable(typeof(SignerResponse<AppInfoResult>))]
-    [JsonSerializable(typeof(AndroidSecSignRequest))]
-    [JsonSerializable(typeof(AndroidEnergyRequest))]
-    [JsonSerializable(typeof(AndroidDebugXwidRequest))]
-    [JsonSerializable(typeof(AndroidSignerResponse<AndroidSignResult>))]
-    [JsonSerializable(typeof(AndroidSignerResponse<string>))]
     
     [JsonSerializable(typeof(MilkyApiResponse))]
     [JsonSerializable(typeof(object))]

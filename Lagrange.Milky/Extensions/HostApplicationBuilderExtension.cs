@@ -61,7 +61,18 @@ public static class HostApplicationBuilderExtension
                 : BotKeystore.CreateEmpty();
 
             BotAppInfo? remoteAppInfo = null;
-            if (!configuration.Protocol.IsAndroid && configuration.Protocol.Signer?.NormalizedBaseUrl != null)
+            if (configuration.Protocol.IsAndroid)
+            {
+                if (!string.IsNullOrEmpty(configuration.Protocol.AndroidSigner?.NormalizedBaseUrl))
+                {
+                    try
+                    {
+                        remoteAppInfo = AndroidHttpSigner.FetchAppInfoAsync(configuration, CancellationToken.None).GetAwaiter().GetResult();
+                    }
+                    catch { }
+                }
+            }
+            else if (!string.IsNullOrEmpty(configuration.Protocol.Signer?.NormalizedBaseUrl))
             {
                 try
                 {

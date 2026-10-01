@@ -58,9 +58,8 @@ public class LagrangeSignerConfiguration(string baseUrl, string token, string? p
 public class LagrangeAndroidSignerConfiguration(string baseUrl = "http://127.0.0.1:8081", string token = "", string? proxyUrl = null)
 {
     public string BaseUrl { get; } = baseUrl;
-    public string NormalizedBaseUrl => BaseUrl.TrimEnd('/');
+    public string NormalizedBaseUrl => BaseUrl.EndsWith('/') ? BaseUrl : $"{BaseUrl}/";
     public string Token { get; } = token;
-
     public string? ProxyUrl { get; } = proxyUrl;
 }
 

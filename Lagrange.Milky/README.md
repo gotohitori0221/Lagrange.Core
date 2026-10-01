@@ -40,7 +40,7 @@ Lagrange.Milky 在启动阶段（`ConfigureLagrange`）集成了向签名服务�
 | `AndroidPhone` / `AndroidPad` / `AndroidWatch` | 安卓协议（手机 / 平板 / 手表） | `AndroidSigner` |
 
 - **PC 签名服务**：`Protocol.Signer`，仅当 `Platform` 为 PC 端时生效。
-- **安卓签名服务**：`Protocol.AndroidSigner`，仅当 `Platform` 为安卓端时生效，需要签名服务端提供 `/sign`、`/energy`、`/get_tlv553` 三个接口。
+- **安卓签名服务**：`Protocol.AndroidSigner`，仅当 `Platform` 为安卓端时生效，签名接口对齐标准规范（`POST /sign/sec-sign` 与 `GET /sign/sec-sign/appinfo_v2`）。
 
 示例（选用安卓协议）：
 
@@ -65,8 +65,8 @@ Lagrange.Milky 在启动阶段（`ConfigureLagrange`）集成了向签名服务�
 
 运行时程序会依据 `Platform` 自动分流：
 
-1. **签名器选择**：安卓平台注入 `AndroidHttpSigner`（对齐 Core 的 `AndroidBotSignProvider`），PC 平台注入 `HttpSigner`。
-2. **AppInfo 获取**：仅 PC 平台会向 `Signer` 拉取 `appinfo_v2` 协议指纹；安卓平台直接使用内置的安卓协议信息（`BotAppInfo.ProtocolToAppInfo`）或 `Protocol.AppInfo` 自定义覆盖，避免误用 PC 指纹导致登录失败。
+1. **签名器选择**：安卓平台注入 `AndroidHttpSigner`（继承 Core 的 `AndroidBotSignProvider`，对接 `/sign/sec-sign`），PC 平台注入 `HttpSigner`。
+2. **AppInfo 动态拉取**：无论 PC 还是安卓平台，均支持向对应的签名服务器请求 `sign/sec-sign/appinfo_v2` 动态拉取客户端指纹与版本信息；若拉取失败或未配置，自动优雅回退到内置协议信息或 `Protocol.AppInfo` 自定义覆盖。
 
 ---
 
