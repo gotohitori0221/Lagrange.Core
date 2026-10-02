@@ -6,7 +6,7 @@ public class GroupMember
 {
     [JsonPropertyName("user_id")] public required long UserId { get; init; }
     [JsonPropertyName("nickname")] public required string Nickname { get; init; }
-    [JsonPropertyName("sex")] public required string Sex { get; init; }
+    [JsonPropertyName("sex")] public required string Sex { get; set; }
     [JsonPropertyName("group_id")] public required long GroupId { get; init; }
     [JsonPropertyName("card")] public required string Card { get; init; }
     [JsonPropertyName("title")] public required string Title { get; init; }

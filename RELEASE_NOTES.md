@@ -19,6 +19,8 @@
 - **群通知字段按需序列化**：修复了 `get_group_notifications` 在没有下一页通知序号时显式吐出 `"next_notification_seq": null` 的毛病，严格遵循规范仅在有值时返回。
 - **富媒体与转发消息健全**：理顺了合并转发多层消息的解析与打包逻辑，以及 Markdown 实体防重复渲染。
 - **图片重复解析与旧版 URL 修复**：彻底解决了发送图片时因协议兼容垫片被重复解析导致一条消息出现两个图片实体（且一个为 0 字节）的 BUG；优化了图片 URL 解析逻辑，不再误用老旧的 `gchat.qpic.cn` 链接，统一自动向腾讯多媒体接口换取官方高可用 NT 下载直链（`https://multimedia.nt.qq.com.cn/download?appid=...`）。
+- **群成员性别 (`sex`) 自动补全**：修复了通过 `get_group_member_info` 获取成员信息时，由于底层 OIDB 0xfe7_3 协议缺少性别属性导致 `sex` 恒为 `unknown` 的问题。现在当性别未知时，系统会自动通过 `FetchStranger` 异步补全真实性别。
+- **私聊消息撤回 (`recall_private_message`) 序列号修正**：区分了私聊协议中的 C2C 序列号 (`ClientSequence`) 与事件序列号 (`Sequence`)，修复了私聊撤回时发送错误序列号导致的撤回报错与失败。
 
 ### 2. 代码仓库整洁化
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。

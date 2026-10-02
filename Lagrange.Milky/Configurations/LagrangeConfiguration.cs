@@ -30,20 +30,12 @@ public class LagrangeServerConfiguration(bool autoReconnect = true, bool useIPv6
     public bool GetOptimumServer { get; } = getOptimumServer;
 }
 
-public class LagrangeProtocolConfiguration(
-    LagrangeSignerConfiguration signer,
-    Platform platform = Platform.Linux,
-    BotAppInfo? appInfo = null,
-    LagrangeAndroidSignerConfiguration? androidSigner = null)
+public class LagrangeProtocolConfiguration(LagrangeSignerConfiguration signer, Platform platform = Platform.Linux, BotAppInfo? appInfo = null)
 {
     public Platform Platform { get; } = platform;
     public BotAppInfo? AppInfo { get; } = appInfo;
 
     public LagrangeSignerConfiguration Signer { get; } = signer;
-
-    public LagrangeAndroidSignerConfiguration AndroidSigner { get; } = androidSigner ?? new();
-
-    public bool IsAndroid => Platform is Platform.AndroidPhone or Platform.AndroidPad or Platform.AndroidWatch;
 }
 
 public class LagrangeSignerConfiguration(string baseUrl, string token, string? proxyUrl = null)
@@ -55,20 +47,9 @@ public class LagrangeSignerConfiguration(string baseUrl, string token, string? p
     public string? ProxyUrl { get; } = proxyUrl;
 }
 
-public class LagrangeAndroidSignerConfiguration(string baseUrl = "http://127.0.0.1:8081", string token = "", string? proxyUrl = null)
-{
-    public string BaseUrl { get; } = baseUrl;
-    public string NormalizedBaseUrl => BaseUrl.EndsWith('/') ? BaseUrl : $"{BaseUrl}/";
-    public string Token { get; } = token;
-    public string? ProxyUrl { get; } = proxyUrl;
-}
-
 public enum Platform
 {
     Windows = 0b00000001,
-    MacOS = 0b00000010,
     Linux = 0b00000100,
-    AndroidPhone = 0b00001000,
-    AndroidPad = 0b00010000,
-    AndroidWatch = 0b00100000,
+    MacOS = 0b00000010,
 }

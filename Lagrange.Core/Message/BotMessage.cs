@@ -46,7 +46,7 @@ public partial class BotMessage
 
     public ulong Sequence { get; set; }
 
-    public ulong ClientSequence { get; init; } = (ulong)new Random().NextInt64(10000, 99999);
+    public ulong ClientSequence { get; set; } = (ulong)new Random().NextInt64(10000, 99999);
 
     
     

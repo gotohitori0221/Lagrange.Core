@@ -56,6 +56,7 @@ internal class MessagingLogic(BotContext context) : ILogic
         if (result.Result != 0) throw new OperationException(result.Result);
 
         message.Sequence = result.Sequence;
+        message.ClientSequence = result.Sequence;
         message.Time = result.SendTime;
 
         context.LogInfo("Lagrange.Core.BotContext", message.ToPreviewString());
@@ -90,8 +91,8 @@ internal class MessagingLogic(BotContext context) : ILogic
             ).AsTask(),
             BotFriend friend => context.EventContext.SendEvent<C2CRecallMsgEventResp>(new C2CRecallMsgEventReq(
                 friend.Uin == context.BotUin ? message.Receiver.Uid : friend.Uid,
+                message.ClientSequence != 0 ? message.ClientSequence : message.Sequence,
                 message.Sequence,
-                message.ClientSequence,
                 message.Random,
                 (uint)message.Time
             )).AsTask(),

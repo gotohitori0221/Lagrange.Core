@@ -26,6 +26,7 @@ public sealed class RecallPrivateMessageHandler(BotContext lagrange, MessageCach
                 ).WaitAsync(ct))
                 .FirstOrDefault();
         if (message == null) return new MilkyApiResponse(-404, "Message not found");
+        message.ClientSequence = (ulong)request.MessageSeq;
         await _lagrange.RecallMessage(message).WaitAsync(ct);
         return new MilkyApiResponse();
     }

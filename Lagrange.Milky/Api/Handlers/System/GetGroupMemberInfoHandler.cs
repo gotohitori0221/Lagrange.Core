@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Lagrange.Core;
+using Lagrange.Core.Common;
 using Lagrange.Core.Common.Interface;
 using Lagrange.Milky.Api.Attributes;
 using Lagrange.Milky.Converters;
@@ -20,12 +21,36 @@ public sealed class GetGroupMemberInfoHandler(BotContext lagrange, MilkyConverte
     {
         var member = (await _lagrange.FetchMembers(request.GroupId, request.NoCache).WaitAsync(ct))
             .FirstOrDefault(m => m.Uin == request.UserId);
-        return member == null
-            ? new MilkyApiResponse<Result>(-404, "Group member not found")
-            : new MilkyApiResponse<Result>(new Result
+        if (member == null)
+            return new MilkyApiResponse<Result>(-404, "Group member not found");
+
+        var groupMember = _converter.ToGroupMember(member);
+        if (groupMember.Sex == "unknown")
+        {
+            try
             {
-                Member = _converter.ToGroupMember(member)
-            });
+                var stranger = await _lagrange.FetchStranger(request.UserId).WaitAsync(ct);
+                string sex = stranger.Gender switch
+                {
+                    BotGender.Male => "male",
+                    BotGender.Female => "female",
+                    _ => "unknown"
+                };
+                if (sex != "unknown")
+                {
+                    groupMember.Sex = sex;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        return new MilkyApiResponse<Result>(new Result
+        {
+            Member = groupMember
+        });
     }
 
     public sealed class Request(long groupId, long userId, bool noCache = false)
