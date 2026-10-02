@@ -51,6 +51,9 @@ file class Common
             Port = x.OutPort
         }).ToList()
     };
+
+    public static byte[] BuildPicPbReserve(int subType) =>
+        subType == 1 ? ProtoHelper.Serialize(new PicExtBizInfoReserve { SubType = 1 }).ToArray() : [];
 }
 
 [EventSubscribe<ImageUploadEventReq>(Protocols.All)]
@@ -63,12 +66,16 @@ internal class ImageUploadService : OidbService<ImageUploadEventReq, ImageUpload
     
     protected override Task<NTV2RichMediaReq> ProcessRequest(ImageUploadEventReq request, BotContext context)
     {
+        var image = (ImageEntity)request.Entity;
         var ext = new ExtBizInfo
         {
             Pic = new PicExtBizInfo
             {
-                TextSummary = ((ImageEntity)request.Entity).Summary,
-                BytesPbReserveC2c = [0x08, 0x00, 0x18, 0x00, 0x20, 0x00, 0x42, 0x00, 0x50, 0x00, 0x62, 0x00, 0x92, 0x01, 0x00, 0x9A, 0x01, 0x00, 0xA2, 0x01, 0x0C, 0x08, 0x00, 0x12, 0x00, 0x18, 0x00, 0x20, 0x00, 0x28, 0x00, 0x3A, 0x00]
+                BizType = (uint)image.SubType,
+                TextSummary = string.IsNullOrEmpty(image.Summary)
+                    ? (image.SubType == 1 ? "[动画表情]" : "[图片]")
+                    : image.Summary,
+                BytesPbReserveC2c = Common.BuildPicPbReserve(image.SubType)
             },
             Video = new VideoExtBizInfo { BytesPbReserve = [] },
             Ptt = new PttExtBizInfo { BytesReserve = [], BytesPbReserve = [], BytesGeneralFlags = [] }
@@ -92,12 +99,17 @@ internal class ImageGroupUploadService : OidbService<ImageGroupUploadEventReq, I
     
     protected override Task<NTV2RichMediaReq> ProcessRequest(ImageGroupUploadEventReq request, BotContext context)
     {
+        var image = (ImageEntity)request.Entity;
         var ext = new ExtBizInfo
         {
             Pic = new PicExtBizInfo
             {
-                TextSummary = ((ImageEntity)request.Entity).Summary,
-                BytesPbReserveC2c = [0x08, 0x00, 0x18, 0x00, 0x20, 0x00, 0x4A, 0x00, 0x50, 0x00, 0x62, 0x00, 0x92, 0x01, 0x00, 0x9A, 0x01, 0x00, 0xAA, 0x01, 0x0C, 0x08, 0x00, 0x12, 0x00, 0x18, 0x00, 0x20, 0x00, 0x28, 0x00, 0x3A, 0x00]
+                BizType = (uint)image.SubType,
+                TextSummary = string.IsNullOrEmpty(image.Summary)
+                    ? (image.SubType == 1 ? "[动画表情]" : "[图片]")
+                    : image.Summary,
+                BytesPbReserveC2c = Common.BuildPicPbReserve(image.SubType),
+                BytesPbReserveTroop = Common.BuildPicPbReserve(image.SubType)
             },
             Video = new VideoExtBizInfo { BytesPbReserve = [] },
             Ptt = new PttExtBizInfo { BytesReserve = [], BytesPbReserve = [], BytesGeneralFlags = [] }

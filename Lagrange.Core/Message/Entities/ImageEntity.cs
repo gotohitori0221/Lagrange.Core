@@ -159,14 +159,17 @@ public class ImageEntity : RichMediaEntityBase
                 }
             }
 
+            var picExt = msgInfo.ExtBizInfo.Pic;
             var entity = new ImageEntity
             {
                 MsgInfo = msgInfo,
                 _fallbackUrl = compatUrl,
                 FileUrl = string.Empty,
                 ImageSize = new Vector2(info.Width, info.Height),
-                SubType = (int)msgInfo.ExtBizInfo.Pic.BizType,
-                Summary = string.IsNullOrEmpty(msgInfo.ExtBizInfo.Pic.TextSummary) ? "[图片]" : msgInfo.ExtBizInfo.Pic.TextSummary,
+                SubType = ResolveSubType(picExt),
+                Summary = string.IsNullOrEmpty(picExt.TextSummary)
+                    ? (ResolveSubType(picExt) == 1 ? "[动画表情]" : "[图片]")
+                    : picExt.TextSummary,
             };
 
             if (entity.FileSize == 0 && compatSize != 0)
@@ -212,6 +215,28 @@ public class ImageEntity : RichMediaEntityBase
         }
 
         return null;
+    }
+
+    private static int ResolveSubType(PicExtBizInfo picExt)
+    {
+        if (picExt.BizType != 0) return (int)picExt.BizType;
+
+        foreach (var reserve in new[] { picExt.BytesPbReserveTroop, picExt.BytesPbReserveC2c })
+        {
+            if (reserve is not { Length: > 0 }) continue;
+
+            try
+            {
+                var parsed = ProtoHelper.Deserialize<PicExtBizInfoReserve>(reserve);
+                if (parsed.SubType != 0) return (int)parsed.SubType;
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        return 0;
     }
 
     private static bool HasMatchingCommonElem(List<Elem> elements, string fileHash)

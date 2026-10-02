@@ -21,6 +21,7 @@
 - **图片重复解析与旧版 URL 修复**：彻底解决了发送图片时因协议兼容垫片被重复解析导致一条消息出现两个图片实体（且一个为 0 字节）的 BUG；优化了图片 URL 解析逻辑，不再误用老旧的 `gchat.qpic.cn` 链接，统一自动向腾讯多媒体接口换取官方高可用 NT 下载直链（`https://multimedia.nt.qq.com.cn/download?appid=...`）。
 - **群成员性别 (`sex`) 自动补全**：修复了通过 `get_group_member_info` 获取成员信息时，由于底层 OIDB 0xfe7_3 协议缺少性别属性导致 `sex` 恒为 `unknown` 的问题。现在当性别未知时，系统会自动通过 `FetchStranger` 异步补全真实性别。
 - **私聊消息撤回 (`recall_private_message`) 序列号修正**：区分了私聊协议中的 C2C 序列号 (`ClientSequence`) 与事件序列号 (`Sequence`)，修复了私聊撤回时发送错误序列号导致的撤回报错与失败。
+- **动画表情 (`sub_type: sticker`) 真正生效**：此前即便指定 `sub_type` 为 `sticker`，发出去的仍是一张普通图片。现在参考 acidify 的实现，在图片上传请求中正确写入 `PicExtBizInfo.BizType` 以及真实的 `PbReserve{subType}` 子消息（同时兼容 C2C 与群聊的两种保留字段），好友与群聊发动画表情都能被客户端正确识别为表情包；接收侧解析也同步支持从 `PbReserve` 兜底判断 `sub_type`。
 
 ### 2. 代码仓库整洁化
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。

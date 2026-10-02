@@ -307,6 +307,12 @@ internal partial class PicExtBizInfo
 }
 
 [ProtoPackable]
+internal partial class PicExtBizInfoReserve
+{
+    [ProtoMember(1)] public uint SubType { get; set; }
+}
+
+[ProtoPackable]
 internal partial class DownloadSafeReq
 {
     [ProtoMember(1)] public IndexNode Index { get; set; }
