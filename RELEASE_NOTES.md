@@ -27,6 +27,9 @@
   - 禁用了 Tiered PGO 避免在长驻运行时额外产生分支插桩内存开销。
   - 限制 SQLite 内部页面缓存大小并开启 WAL 模式。
   - 引入了 `MemoryManagementService`，在登录启动完成后及后台运行期间自动对启动阶段产生的瞬态垃圾进行深度压缩回收（Windows 系统配合释放工作集），大幅压低物理内存与工作集占用。
+- **合并转发与特殊字符日志异常修复**：
+  - 修复接收合并转发消息解析子消息时，`ResolveContact` / `ResolveReceiver` 因未知消息类型抛出 `NotImplementedException` 导致合并转发解析失败的 BUG，增加 208（语音等）及兜底解析逻辑。
+  - 修复当消息内容包含 `{}` 等字符时，`BotContext.Log*` 误将其当做 `string.Format` 格式化占位符导致抛出 `System.FormatException: Input string was not in a correct format` 的崩溃 BUG。
 
 ### 2. 代码仓库整洁化
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。

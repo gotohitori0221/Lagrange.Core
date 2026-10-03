@@ -119,6 +119,7 @@ internal class MessagePacker(BotContext context)
         {
             case 166:
             case 529:
+            case 208:
                 var friend = await context.CacheContext.ResolveFriend(routingHead.FromUin);
                 return friend ?? new BotFriend(routingHead.FromUin, routingHead.FromUid, string.Empty, string.Empty, string.Empty, string.Empty, null!);
 
@@ -133,7 +134,24 @@ internal class MessagePacker(BotContext context)
                 return new BotGroupMember(dummyGroup, routingHead.FromUin, routingHead.FromUid, routingHead.Group.GroupCard, GroupMemberPermission.Member, 0, routingHead.Group.GroupCard, null, now, now, now);
 
             default:
-                throw new NotImplementedException();
+                if (routingHead.Group != null && routingHead.Group.GroupCode != 0)
+                {
+                    var mItems = await context.CacheContext.ResolveMember(routingHead.Group.GroupCode, routingHead.FromUin);
+                    if (mItems != null) return mItems.Value.Item2;
+
+                    long n = DateTimeOffset.Now.ToUnixTimeSeconds();
+                    var dGroup = new BotGroup(routingHead.Group.GroupCode, routingHead.Group.GroupName, 0, 0, 0, null, null, null);
+                    return new BotGroupMember(dGroup, routingHead.FromUin, routingHead.FromUid, routingHead.Group.GroupCard, GroupMemberPermission.Member, 0, routingHead.Group.GroupCard, null, n, n, n);
+                }
+
+                if (routingHead.FromUin != 0 || !string.IsNullOrEmpty(routingHead.FromUid))
+                {
+                    var f = await context.CacheContext.ResolveFriend(routingHead.FromUin);
+                    return f ?? new BotFriend(routingHead.FromUin, routingHead.FromUid, string.Empty, string.Empty, string.Empty, string.Empty, null!);
+                }
+
+                long fallbackNow = DateTimeOffset.Now.ToUnixTimeSeconds();
+                return new BotFriend(routingHead.FromUin, routingHead.FromUid, string.Empty, string.Empty, string.Empty, string.Empty, null!);
         }
     }
 
@@ -143,6 +161,7 @@ internal class MessagePacker(BotContext context)
         {
             case 166:
             case 529:
+            case 208:
                 var friend = await context.CacheContext.ResolveFriend(routingHead.ToUin);
                 if (friend == null)
                 {
@@ -163,7 +182,26 @@ internal class MessagePacker(BotContext context)
 
                 return items.Value.Item2;
             default:
-                throw new NotImplementedException();
+                if (routingHead.Group != null && routingHead.Group.GroupCode != 0)
+                {
+                    var mItems = await context.CacheContext.ResolveMember(routingHead.Group.GroupCode, routingHead.ToUin);
+                    if (mItems == null)
+                    {
+                        long n = DateTimeOffset.Now.ToUnixTimeSeconds();
+                        var dGroup = new BotGroup(routingHead.Group.GroupCode, routingHead.Group.GroupName, 0, 0, 0, null, null, null);
+                        return new BotGroupMember(dGroup, routingHead.ToUin, routingHead.ToUid, routingHead.Group.GroupCard, GroupMemberPermission.Member, 0, routingHead.Group.GroupCard, null, n, n, n);
+                    }
+
+                    return mItems.Value.Item2;
+                }
+
+                if (routingHead.ToUin != 0 || !string.IsNullOrEmpty(routingHead.ToUid))
+                {
+                    var f = await context.CacheContext.ResolveFriend(routingHead.ToUin);
+                    return f ?? new BotFriend(routingHead.ToUin, routingHead.ToUid, string.Empty, string.Empty, string.Empty, string.Empty, null!);
+                }
+
+                return new BotFriend(routingHead.ToUin, routingHead.ToUid, string.Empty, string.Empty, string.Empty, string.Empty, null!);
         }
     }
 
