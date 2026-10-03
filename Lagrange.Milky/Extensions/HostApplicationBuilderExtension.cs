@@ -17,6 +17,7 @@ using Lagrange.Milky.Http;
 using Lagrange.Milky.Logging;
 using Lagrange.Milky.Login;
 using Lagrange.Milky.Serialization;
+using Lagrange.Milky.Services;
 using Lagrange.Milky.Signing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -96,6 +97,7 @@ public static class HostApplicationBuilderExtension
         builder.Services.AddSingleton<MessageStore>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<MessageStore>());
         builder.Services.AddHostedService<CacheService>();
+        builder.Services.AddHostedService<MemoryManagementService>();
 
         builder.Services.AddSingleton<MilkyConverter>();
         builder.Services.AddSingleton<ResourceConverter>();

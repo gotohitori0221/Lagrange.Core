@@ -42,6 +42,10 @@ public sealed class MessageStore : IHostedService, IDisposable
         _conn.Open();
         using var cmd = _conn.CreateCommand();
         cmd.CommandText = """
+            PRAGMA journal_mode = WAL;
+            PRAGMA synchronous = NORMAL;
+            PRAGMA cache_size = -2000;
+            PRAGMA temp_store = MEMORY;
             CREATE TABLE IF NOT EXISTS messages (
                 type     INTEGER NOT NULL,
                 peer_uin INTEGER NOT NULL,

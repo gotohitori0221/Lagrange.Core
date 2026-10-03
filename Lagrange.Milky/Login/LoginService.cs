@@ -10,6 +10,7 @@ using Lagrange.Milky.Captcha;
 using Lagrange.Milky.Configurations;
 using Lagrange.Milky.Extensions;
 using Lagrange.Milky.Serialization;
+using Lagrange.Milky.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Net.Codecrete.QrCodeGenerator;
@@ -54,6 +55,11 @@ public class LoginService(IHostEnvironment environment, ILogger<LoginService> lo
 
         if (!success) throw new Exception("Failed to login for account {_uin}."); 
         _logger.LogLoginSuccess(_lagrange.BotUin);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(3000);
+            MemoryManagementService.TrimMemory();
+        });
 
         _lagrange.EventInvoker.UnregisterEvent<BotQrCodeEvent>(OnQrCode);
         _lagrange.EventInvoker.UnregisterEvent<BotQrCodeQueryEvent>(OnQrCodeQuery);

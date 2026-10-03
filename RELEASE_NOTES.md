@@ -22,6 +22,11 @@
 - **群成员性别 (`sex`) 自动补全**：修复了通过 `get_group_member_info` 获取成员信息时，由于底层 OIDB 0xfe7_3 协议缺少性别属性导致 `sex` 恒为 `unknown` 的问题。现在当性别未知时，系统会自动通过 `FetchStranger` 异步补全真实性别。
 - **私聊消息撤回 (`recall_private_message`) 序列号修正**：区分了私聊协议中的 C2C 序列号 (`ClientSequence`) 与事件序列号 (`Sequence`)，修复了私聊撤回时发送错误序列号导致的撤回报错与失败。
 - **动画表情 (`sub_type: sticker`) 真正生效**：此前即便指定 `sub_type` 为 `sticker`，发出去的仍是一张普通图片。现在参考 acidify 的实现，在图片上传请求中正确写入 `PicExtBizInfo.BizType` 以及真实的 `PbReserve{subType}` 子消息（同时兼容 C2C 与群聊的两种保留字段），好友与群聊发动画表情都能被客户端正确识别为表情包；接收侧解析也同步支持从 `PbReserve` 兜底判断 `sub_type`。
+- **运行时内存深度优化**：
+  - 针对此前内存常驻高达 120MB+ 的问题进行了专项治理，将 .NET 默认的 Server GC 调整为轻量化的 Workstation GC（工作站单堆模式），并开启 `RetainVMGarbageCollection=false`，杜绝未使用的虚拟内存长期滞留。
+  - 禁用了 Tiered PGO 避免在长驻运行时额外产生分支插桩内存开销。
+  - 限制 SQLite 内部页面缓存大小并开启 WAL 模式。
+  - 引入了 `MemoryManagementService`，在登录启动完成后及后台运行期间自动对启动阶段产生的瞬态垃圾进行深度压缩回收（Windows 系统配合释放工作集），大幅压低物理内存与工作集占用。
 
 ### 2. 代码仓库整洁化
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。
