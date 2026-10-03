@@ -1,6 +1,9 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Lagrange.Core.Common;
 using Lagrange.Core.Common.Entity;
+using Lagrange.Core.Common.Interface;
 using Lagrange.Milky.Events.Converters;
 using Lagrange.Milky.Extensions;
 using Lagrange.Milky.Models;
@@ -62,6 +65,30 @@ public partial class MilkyConverter
         LastSentTime = member.LastMsgTime,
         ShutUpEndTime = member.ShutUpTimestamp == 0 ? null : member.ShutUpTimestamp
     };
+
+    public async Task<GroupMember> ToGroupMemberAsync(BotGroupMember member, CancellationToken ct = default)
+    {
+        var result = ToGroupMember(member);
+        if (result.Sex == "unknown")
+        {
+            try
+            {
+                var stranger = await _lagrange.FetchStranger(member.Uin).WaitAsync(ct);
+                result.Sex = stranger.Gender switch
+                {
+                    BotGender.Male => "male",
+                    BotGender.Female => "female",
+                    _ => "unknown"
+                };
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        return result;
+    }
 
     private FriendCategory ToFriendCategory(BotFriendCategory category) => new()
     {

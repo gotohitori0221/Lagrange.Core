@@ -89,10 +89,19 @@ public class ImageEntity : RichMediaEntityBase
         }
     }
 
-    public override string ToPreviewString() =>
-        string.IsNullOrEmpty(FileUrl)
-            ? $"[Image: {ImageSize.X}x{ImageSize.Y}] {Summary} {FileSize} bytes"
-            : $"[Image: {ImageSize.X}x{ImageSize.Y}] {Summary} {FileSize} bytes | URL: {FileUrl}";
+    public override string ToPreviewString()
+    {
+        string subType = SubType switch
+        {
+            0 => "normal",
+            1 => "sticker",
+            _ => $"unknown({SubType})"
+        };
+
+        return string.IsNullOrEmpty(FileUrl)
+            ? $"[Image: {ImageSize.X}x{ImageSize.Y}] {Summary} [sub_type: {subType}] {FileSize} bytes"
+            : $"[Image: {ImageSize.X}x{ImageSize.Y}] {Summary} [sub_type: {subType}] {FileSize} bytes | URL: {FileUrl}";
+    }
     internal override Elem[] Build()
     {
         if (_compat != null)

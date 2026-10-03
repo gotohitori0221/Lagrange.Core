@@ -20,9 +20,10 @@ public sealed class GetGroupMemberListHandler(BotContext lagrange, MilkyConverte
     public async ValueTask<MilkyApiResponse<Result>> HandleAsync(Request request, CancellationToken ct)
     {
         var members = await _lagrange.FetchMembers(request.GroupId, request.NoCache).WaitAsync(ct);
+        var results = await Task.WhenAll(members.Select(m => _converter.ToGroupMemberAsync(m, ct)));
         return new MilkyApiResponse<Result>(new Result
         {
-            Members = [.. members.Select(_converter.ToGroupMember)]
+            Members = results
         });
     }
 

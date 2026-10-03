@@ -24,32 +24,9 @@ public sealed class GetGroupMemberInfoHandler(BotContext lagrange, MilkyConverte
         if (member == null)
             return new MilkyApiResponse<Result>(-404, "Group member not found");
 
-        var groupMember = _converter.ToGroupMember(member);
-        if (groupMember.Sex == "unknown")
-        {
-            try
-            {
-                var stranger = await _lagrange.FetchStranger(request.UserId).WaitAsync(ct);
-                string sex = stranger.Gender switch
-                {
-                    BotGender.Male => "male",
-                    BotGender.Female => "female",
-                    _ => "unknown"
-                };
-                if (sex != "unknown")
-                {
-                    groupMember.Sex = sex;
-                }
-            }
-            catch
-            {
-                // ignore
-            }
-        }
-
         return new MilkyApiResponse<Result>(new Result
         {
-            Member = groupMember
+            Member = await _converter.ToGroupMemberAsync(member, ct)
         });
     }
 

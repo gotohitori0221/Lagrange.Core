@@ -45,7 +45,7 @@ public partial class MilkyConverter
             Time = message.Time,
             Segments = await ToIncomingSegmentsAsync(message.Entities, message.Type, group.Uin, ct),
             Group = ToGroup(group),
-            GroupMember = ToGroupMember(member),
+            GroupMember = await ToGroupMemberAsync(member, ct),
         };
     }
 
