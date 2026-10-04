@@ -56,7 +56,7 @@ public sealed class GetHistoryMessagesHandler(BotContext lagrange, MessageStore 
         
         var dbMessages = _store.GetRange(messageType, request.PeerId, startSeq, endSeq, request.Limit);
         IReadOnlyList<BotMessage> messages;
-        if (dbMessages.Count >= Math.Min(request.Limit, (int)(endSeq - startSeq)))
+        if (dbMessages.Count > 0)
         {
             messages = dbMessages;
         }

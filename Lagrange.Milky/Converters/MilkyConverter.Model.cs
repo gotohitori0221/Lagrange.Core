@@ -69,7 +69,7 @@ public partial class MilkyConverter
     public async Task<GroupMember> ToGroupMemberAsync(BotGroupMember member, CancellationToken ct = default)
     {
         var result = ToGroupMember(member);
-        if (result.Sex == "unknown")
+        if (result.Sex == "unknown" && member.Uin != 0)
         {
             try
             {

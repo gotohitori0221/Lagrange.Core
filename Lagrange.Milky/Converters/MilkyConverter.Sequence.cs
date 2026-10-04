@@ -170,6 +170,7 @@ public partial class MilkyConverter
     private async Task<ReplyIncomingSegment> ToReplyIncomingSegmentAsync(ReplyEntity reply, MessageType type, long ownerPeerUin, CancellationToken ct = default)
     {
         var message = _cache.Get(type, ownerPeerUin, reply.SrcSequence)
+            ?? _store.Get(type, ownerPeerUin, reply.SrcSequence)
             ?? (type switch
             {
                 MessageType.Private => await _lagrange.GetC2CMessage(

@@ -30,6 +30,10 @@
 - **合并转发与特殊字符日志异常修复**：
   - 修复接收合并转发消息解析子消息时，`ResolveContact` / `ResolveReceiver` 因未知消息类型抛出 `NotImplementedException` 导致合并转发解析失败的 BUG，增加 208（语音等）及兜底解析逻辑。
   - 修复当消息内容包含 `{}` 等字符时，`BotContext.Log*` 误将其当做 `string.Format` 格式化占位符导致抛出 `System.FormatException: Input string was not in a correct format` 的崩溃 BUG。
+- **历史消息与获取消息全链路提速与 DB 优先机制**：
+  - **`get_history_messages` 优先读库**：大幅优化历史消息拉取策略，只要本地 DB 存在记录即直接高速返回，不再因差一两条消息强行向腾讯发起昂贵的网络请求，解决撤回消息拉不动及拉取延迟过高问题。
+  - **`get_message` / 引用消息多级缓存加速**：解析回复引用（Reply）时接入本地 `MessageStore`，先查内存 `MessageCache` -> 本地 SQLite `MessageStore` -> 远端网络，杜绝每次查单条消息都等待远程网络请求。
+  - **消除 `0xFE1_2` 警告**：群成员信息转换增加 `Uin != 0` 保护，杜绝向陌生人资料接口传 0 导致的 `Error: 30008, Message: kReqUinNil` 警告日志。
 
 ### 2. 代码仓库整洁化
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。
