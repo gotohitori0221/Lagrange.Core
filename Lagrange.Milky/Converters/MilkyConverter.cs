@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Lagrange.Core;
 using Lagrange.Milky.Caching;
 using Lagrange.Milky.Storage;
@@ -10,5 +11,10 @@ public partial class MilkyConverter(BotContext lagrange, MessageCache cache, Mes
     private readonly MessageCache _cache = cache;
     private readonly MessageStore _store = store;
     private readonly ResourceConverter _resourceConverter = resourceConverter;
+
+    
+    
+    
+    private readonly ConcurrentDictionary<long, string> _memberSexCache = new();
 }
 

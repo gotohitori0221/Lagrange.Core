@@ -70,6 +70,8 @@ public sealed class GetHistoryMessagesHandler(BotContext lagrange, MessageStore 
             };
         }
 
+        await _converter.PrefetchMemberSexAsync(messages, ct);
+
         var incomingMessages = new IncomingMessageBase[messages.Count];
         for (int i = 0; i < messages.Count; i++)
             incomingMessages[i] = await _converter.ToIncomingMessageAsync(messages[i], ct);

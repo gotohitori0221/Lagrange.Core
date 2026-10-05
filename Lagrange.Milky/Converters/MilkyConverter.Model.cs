@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Lagrange.Core.Common;
 using Lagrange.Core.Common.Entity;
 using Lagrange.Core.Common.Interface;
+using Lagrange.Core.Message;
 using Lagrange.Milky.Events.Converters;
 using Lagrange.Milky.Extensions;
 using Lagrange.Milky.Models;
@@ -69,25 +72,72 @@ public partial class MilkyConverter
     public async Task<GroupMember> ToGroupMemberAsync(BotGroupMember member, CancellationToken ct = default)
     {
         var result = ToGroupMember(member);
-        if (result.Sex == "unknown" && member.Uin != 0)
+        if (result.Sex != "unknown" || member.Uin == 0) return result;
+
+        if (_memberSexCache.TryGetValue(member.Uin, out var cached))
         {
-            try
-            {
-                var stranger = await _lagrange.FetchStranger(member.Uin).WaitAsync(ct);
-                result.Sex = stranger.Gender switch
-                {
-                    BotGender.Male => "male",
-                    BotGender.Female => "female",
-                    _ => "unknown"
-                };
-            }
-            catch
-            {
-                // ignored
-            }
+            result.Sex = cached;
+            return result;
         }
 
+        result.Sex = await FetchMemberSexAsync(member.Uin, ct);
         return result;
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    public async Task PrefetchMemberSexAsync(IEnumerable<BotMessage> messages, CancellationToken ct = default)
+    {
+        HashSet<long>? uins = null;
+        foreach (var message in messages)
+        {
+            if (message.Contact is not BotGroupMember member) continue;
+            if (member.Uin == 0 || member.Gender != BotGender.Unknown) continue;
+            if (_memberSexCache.ContainsKey(member.Uin)) continue;
+            (uins ??= []).Add(member.Uin);
+        }
+
+        if (uins is null || uins.Count == 0) return;
+
+        using var semaphore = new SemaphoreSlim(8);
+        var tasks = uins.Select(async uin =>
+        {
+            await semaphore.WaitAsync(ct);
+            try { await FetchMemberSexAsync(uin, ct); }
+            finally { semaphore.Release(); }
+        });
+        await Task.WhenAll(tasks);
+    }
+
+    private async Task<string> FetchMemberSexAsync(long uin, CancellationToken ct)
+    {
+        if (_memberSexCache.TryGetValue(uin, out var cached)) return cached;
+
+        try
+        {
+            
+            
+            var stranger = await _lagrange.FetchStranger(uin).WaitAsync(TimeSpan.FromSeconds(3), ct);
+            var sex = stranger.Gender switch
+            {
+                BotGender.Male => "male",
+                BotGender.Female => "female",
+                _ => "unknown",
+            };
+            _memberSexCache[uin] = sex;
+            return sex;
+        }
+        catch
+        {
+            
+            return "unknown";
+        }
     }
 
     private FriendCategory ToFriendCategory(BotFriendCategory category) => new()
