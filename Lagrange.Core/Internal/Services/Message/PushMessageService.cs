@@ -12,8 +12,17 @@ internal class PushMessageService : BaseService<PushMessageEvent, PushMessageEve
 {
     protected override ValueTask<PushMessageEvent> Parse(ReadOnlyMemory<byte> input, BotContext context)
     {
-        var msg = ProtoHelper.Deserialize<MsgPush>(input.Span);
-        
+        MsgPush msg;
+        try
+        {
+            msg = ProtoHelper.Deserialize<MsgPush>(input.Span);
+        }
+        catch (Exception e)
+        {
+            context.LogWarning("MsgPush", $"Failed to parse MsgPush packet, skipped. {e.GetType().Name}: {e.Message}");
+            return new ValueTask<PushMessageEvent>(new PushMessageEvent(null!, input));
+        }
+
         return new ValueTask<PushMessageEvent>(new PushMessageEvent(msg, input));
     }
 }

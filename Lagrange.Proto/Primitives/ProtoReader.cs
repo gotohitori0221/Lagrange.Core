@@ -338,15 +338,27 @@ public ref struct ProtoReader
                 SkipLengthDelimited();
                 break;
             case (WireType)3: 
-            case (WireType)4: 
-                
+                SkipGroup();
                 break;
-            case (WireType)6: 
-            case (WireType)7: 
-                
+            case (WireType)4: 
+                break;
+            case (WireType)6:
+            case (WireType)7:
+                ThrowHelper.ThrowInvalidDataException_MalformedMessage();
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(wireType), wireType, null);
+        }
+    }
+
+    private void SkipGroup()
+    {
+        while (!IsCompleted)
+        {
+            uint tag = DecodeVarInt<uint>();
+            var wireType = (WireType)(tag & 0x07);
+            if (wireType == (WireType)4) return; 
+            SkipField(wireType);
         }
     }
 

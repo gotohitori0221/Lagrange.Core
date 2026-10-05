@@ -14,6 +14,7 @@ internal class PushLogic(BotContext ctx) : ILogic
     public async ValueTask Incoming(ProtocolEvent e)
     {
         if (e is not PushMessageEvent msgEvt) return;
+        if (msgEvt.MsgPush?.CommonMessage?.ContentHead is null) return;
         var msgType = (MsgType)msgEvt.MsgPush.CommonMessage.ContentHead.Type;
         var subType = msgEvt.MsgPush.CommonMessage.ContentHead.SubType;
         var hasContent = msgEvt.MsgPush.CommonMessage.MessageBody?.MsgContent is not null;
