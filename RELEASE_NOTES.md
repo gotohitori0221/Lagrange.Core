@@ -47,6 +47,11 @@
   - 修复 `ProtoReader.SkipVarInt` 在缓冲区末尾**越界读取 16 字节**，导致 varint 长度计算错误、进而使子消息（如 `ContentHead`）解析整体错位并抛出 `SkipLengthDelimited size is ... but only ... bytes are available` / `Malformed proto message` 的问题；改为剩余字节不足时走逐字节安全路径。
   - tag 解码统一改用带边界保护的 `DecodeVarInt`，避免缓冲区尾部越界读取。
   - `SocketContext` 在连接断开 / Socket 异常时，将全部挂起请求以异常结束，避免网络中断后 API 调用**永久卡住**。
+- **新增 Ark 卡片服务端签名通路 `send_oidb_0xb77`（本次重点）**：
+  - 背景：Ark / 音乐卡片等 `light_app` 消息中的 `config.token`（`signedArk`）需要由腾讯服务端签发，本地不存在可复现的签名算法；token 无效时服务端会**静默丢弃**消息（返回 `retcode 0` 但 `message_seq` 为 `0`）。
+  - 新增 `OidbSvc.0xb77_9` 协议服务（`Oidb0Xb77Service` / `Oidb0Xb77Event`）及 Milky HTTP 接口 `send_oidb_0xb77`，可直接把复现构造的 OIDB 0xb77 请求体发往腾讯服务端，取回服务端签发的签名数据。
+  - 请求参数：`body_hex`（OIDB 0xb77 内层请求体的十六进制字符串）；响应返回 `result`、`message` 与 `body_hex`（服务端响应体十六进制）。
+  - `OidbSvc.0xb77_9` 已存在于 PC / Android 签名白名单中，无需额外改动签名链路。
 
 ### 2. 代码仓库整洁化
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。
