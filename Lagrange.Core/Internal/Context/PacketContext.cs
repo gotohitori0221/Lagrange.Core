@@ -99,6 +99,17 @@ internal class PacketContext
         return new ValueTask<BotSsoPacket>(tcs, 0);
     }
 
+    public void FailAllPending(Exception exception)
+    {
+        foreach (var sequence in _pendingTasks.Keys)
+        {
+            if (_pendingTasks.TryRemove(sequence, out var pending))
+            {
+                pending.SetException(exception);
+            }
+        }
+    }
+
     public void DispatchPacket(ReadOnlySpan<byte> buffer)
     {
         var service = _servicePacker.Parse(buffer);

@@ -39,6 +39,14 @@
   - 现引入群成员性别内存缓存（`ConcurrentDictionary`），同一发送者只请求一次，后续直接命中缓存。
   - 批量拉取历史消息时，先对整批消息的发送者做**受限并发（8 路）预取**，把 N 次串行网络往返压缩为一个并发批次。
   - 单次陌生人请求超时收紧至 3 秒，杜绝个别卡死请求拖垮整批响应；历史消息拉取耗时从 21 秒级降至秒级。
+- **`light_app`（小程序卡片 / 音乐卡片）发送卡死修复（本次重点）**：
+  - 修复了通过 `send_group_message` 发送 `light_app` 段（如网易云音乐卡片、Ark 卡片）时 HTTP 接口**永久卡住不返回**的严重 BUG。
+  - 根因：`BinaryPacket` 以无参构造创建时初始容量为 0，而 `GrowSize` 中的 `while (_offset + additional > _capacity) _capacity *= 2;` 由于 `0 * 2` 恒等于 0 而陷入**死循环**，首次写入即卡死；`LightAppEntity.Build()` 恰好是唯一使用无参构造的调用点，因此只有 `light_app` 发送会卡住。
+  - 修复：`GrowSize` 增加零容量兜底（容量为 0 时取 `max(additional, 16)`），并为 `LightAppEntity` 预分配合理初始容量。
+- **协议解析健壮性增强**：
+  - 修复 `ProtoReader.SkipVarInt` 在缓冲区末尾**越界读取 16 字节**，导致 varint 长度计算错误、进而使子消息（如 `ContentHead`）解析整体错位并抛出 `SkipLengthDelimited size is ... but only ... bytes are available` / `Malformed proto message` 的问题；改为剩余字节不足时走逐字节安全路径。
+  - tag 解码统一改用带边界保护的 `DecodeVarInt`，避免缓冲区尾部越界读取。
+  - `SocketContext` 在连接断开 / Socket 异常时，将全部挂起请求以异常结束，避免网络中断后 API 调用**永久卡住**。
 
 ### 2. 代码仓库整洁化
 - 彻底清理了代码中散落的历史注释、无用废弃说明以及调试标记，代码结构利落干净。

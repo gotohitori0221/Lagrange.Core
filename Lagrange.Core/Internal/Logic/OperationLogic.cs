@@ -483,7 +483,7 @@ internal class OperationLogic(BotContext context) : ILogic
         var reader = new ProtoReader(Convert.FromBase64String(base64));
         while (!reader.IsCompleted)
         {
-            uint tag = reader.DecodeVarIntUnsafe<uint>();
+            uint tag = reader.DecodeVarInt<uint>();
             switch (tag >>> 3)
             {
                 case 4:

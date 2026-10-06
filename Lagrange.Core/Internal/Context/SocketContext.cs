@@ -34,12 +34,12 @@ internal class SocketContext : IClientListener, IDisposable
 
     public void OnDisconnect()
     {
-        
+        _context.PacketContext.FailAllPending(new InvalidOperationException("The socket was disconnected while waiting for the server response."));
     }
 
     public void OnSocketError(Exception e, ReadOnlyMemory<byte> data)
     {
-        
+        _context.PacketContext.FailAllPending(e);
     }
     
     public async Task<bool> Connect()

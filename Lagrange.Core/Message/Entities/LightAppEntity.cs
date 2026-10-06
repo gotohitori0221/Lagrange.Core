@@ -23,9 +23,10 @@ public class LightAppEntity : IMessageEntity
     
     Elem[] IMessageEntity.Build()
     {
-        using var payload = new BinaryPacket();
+        var raw = Encoding.UTF8.GetBytes(Payload);
+        using var payload = new BinaryPacket(raw.Length + 32);
         payload.Write<byte>(0x01);
-        payload.Write(ZCompression.ZCompress(Encoding.UTF8.GetBytes(Payload)));
+        payload.Write(ZCompression.ZCompress(raw));
 
         return new Elem[]
         {

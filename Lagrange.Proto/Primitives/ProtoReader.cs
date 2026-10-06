@@ -364,11 +364,23 @@ public ref struct ProtoReader
 
     private void SkipVarInt()
     {
-        ulong b0 = Unsafe.As<byte, ulong>(ref Unsafe.Add(ref _first, _offset));
-        ulong b1 = Unsafe.As<byte, ulong>(ref Unsafe.Add(ref _first, _offset + 8));
-        ulong msbs0 = ~b0 & ~0x7f7f7f7f7f7f7f7ful;
-        ulong msbs1 = ~b1 & ~0x7f7f7f7f7f7f7f7ful;
-        _offset += msbs0 == 0 ? (BitOperations.TrailingZeroCount(msbs1) + 1 + 64) >> 3 : (BitOperations.TrailingZeroCount(msbs0) + 1) >> 3;
+        if (_length - _offset >= 16)
+        {
+            ulong b0 = Unsafe.As<byte, ulong>(ref Unsafe.Add(ref _first, _offset));
+            ulong b1 = Unsafe.As<byte, ulong>(ref Unsafe.Add(ref _first, _offset + 8));
+            ulong msbs0 = ~b0 & ~0x7f7f7f7f7f7f7f7ful;
+            ulong msbs1 = ~b1 & ~0x7f7f7f7f7f7f7f7ful;
+            _offset += msbs0 == 0 ? (BitOperations.TrailingZeroCount(msbs1) + 1 + 64) >> 3 : (BitOperations.TrailingZeroCount(msbs0) + 1) >> 3;
+            return;
+        }
+
+        while (true)
+        {
+            if (_offset >= _length) ThrowHelper.ThrowInvalidDataException_MalformedMessage();
+
+            byte b = Unsafe.Add(ref _first, _offset++);
+            if (b <= 0x7F) return;
+        }
     }
     
     private void SkipFixed32()

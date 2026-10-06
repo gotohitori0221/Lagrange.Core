@@ -16,7 +16,6 @@ public partial class ProtoSourceGenerator
         private const string ReaderVarName = "reader";
 
         private const string DecodeVarIntMethodName = "DecodeVarInt";
-        private const string DecodeVarIntUnsafeMethodName = "DecodeVarIntUnsafe";
         private const string DecodeFixed32MethodName = "DecodeFixed32";
         private const string DecodeFixed64MethodName = "DecodeFixed64";
         private const string CreateSpanMethodName = "CreateSpan";
@@ -34,7 +33,7 @@ public partial class ProtoSourceGenerator
             source.WriteLine("{");
             source.Indentation++;
 
-            source.WriteLine($"uint tag = {ReaderVarName}.{DecodeVarIntUnsafeMethodName}<uint>();");
+            source.WriteLine($"uint tag = {ReaderVarName}.{DecodeVarIntMethodName}<uint>();");
             source.WriteLine("switch (tag)");
             source.WriteLine("{");
             source.Indentation++;

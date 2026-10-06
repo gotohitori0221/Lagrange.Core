@@ -57,7 +57,7 @@ internal class ProtoObjectConverter<T>(ProtoObjectInfo<T> objectInfo) : ProtoCon
         var subReader = new ProtoReader(subSpan);
         while (!subReader.IsCompleted)
         {
-            uint tag = subReader.DecodeVarIntUnsafe<uint>();
+            uint tag = subReader.DecodeVarInt<uint>();
             if (ObjectInfo.Fields.TryGetValue(tag, out var fieldInfo))
             {
                 fieldInfo.Read(ref subReader, boxed);

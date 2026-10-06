@@ -74,7 +74,7 @@ public static partial class ProtoSerializer
 
         while (!reader.IsCompleted)
         {
-            uint tag = reader.DecodeVarIntUnsafe<uint>();
+            uint tag = reader.DecodeVarInt<uint>();
             if (converter.ObjectInfo.Fields.TryGetValue(tag, out var fieldInfo))
             {
                 fieldInfo.Read(ref reader, boxed);

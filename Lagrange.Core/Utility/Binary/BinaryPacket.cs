@@ -297,6 +297,8 @@ internal ref struct BinaryPacket
     [MethodImpl(MethodImplOptions.NoInlining)] 
     private void GrowSize(int additional)
     {
+        if (_capacity <= 0) _capacity = Math.Max(additional, 16);
+
         while (_offset + additional > _capacity) _capacity *= 2;
         _bytesToReturnToPool = ArrayPool<byte>.Shared.Rent(_capacity);
 
