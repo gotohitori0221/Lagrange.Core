@@ -39,6 +39,11 @@ public class MentionEntity(long uin, string? display) : IMessageEntity
             if (!Display.StartsWith('@')) Display = '@' + Display;
             Uid = contact.Uid;
         }
+        else
+        {
+            // @全体成员：Uin 为 0，没有具体成员可解析，仅需提供展示文本（AtType = 1）
+            Display ??= "@全体成员";
+        }
     }
 
     Task IMessageEntity.Postprocess(BotContext context, BotMessage message)

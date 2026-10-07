@@ -86,6 +86,15 @@ internal class MessagePacker(BotContext context)
             }
         }
 
+        // 真实 QQ 客户端在 @ 之后会固定附带一个纯空白文本 elem（分隔符）。
+        // 若它落在消息末尾、且前一个实体就是 @，则只是残留噪音，去掉它。
+        while (message.Entities.Count > 1 &&
+               message.Entities[^1] is TextEntity trailing && string.IsNullOrWhiteSpace(trailing.Text) &&
+               message.Entities[^2] is MentionEntity)
+        {
+            message.Entities.RemoveAt(message.Entities.Count - 1);
+        }
+
         await Task.WhenAll(message.Entities.Select(entity => entity.Postprocess(context, message)));
 
         return message;
