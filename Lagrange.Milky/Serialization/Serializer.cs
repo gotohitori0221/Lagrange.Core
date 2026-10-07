@@ -142,6 +142,8 @@ public static partial class Serializer
     [JsonSerializable(typeof(SetGroupAvatarHandler.Request), TypeInfoPropertyName = "SetGroupAvatarRequest")]
     [JsonSerializable(typeof(SetGroupMemberAdminHandler.Request), TypeInfoPropertyName = "SetGroupMemberAdminRequest")]
     [JsonSerializable(typeof(MarkMessageAsReadHandler.Request), TypeInfoPropertyName = "MarkMessageAsReadRequest")]
+    [JsonSerializable(typeof(SendRawPacketHandler.Request), TypeInfoPropertyName = "SendRawPacketRequest")]
+    [JsonSerializable(typeof(SendRawPacketHandler.Result), TypeInfoPropertyName = "SendRawPacketResult")]
     
     [JsonSerializable(typeof(MilkyEvent))]
     [JsonSerializable(typeof(BotOfflineEventConverter.Data), TypeInfoPropertyName = "BotOfflineEventData")]

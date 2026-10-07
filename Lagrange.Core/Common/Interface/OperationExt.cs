@@ -117,10 +117,4 @@ public static class OperationExt
 
     public static Task<(List<string> FriendUids, List<uint> GroupUins)> FetchPins(this BotContext context) =>
         context.EventContext.GetLogic<OperationLogic>().FetchPins();
-
-    public static async Task<(uint Result, string Message, ReadOnlyMemory<byte> Body)> SendOidb0Xb77(this BotContext context, ReadOnlyMemory<byte> body)
-    {
-        var response = await context.EventContext.SendEvent<Oidb0Xb77EventResp>(new Oidb0Xb77EventReq(body));
-        return (response.Result, response.Message, response.Body);
-    }
 }
