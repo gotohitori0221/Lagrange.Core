@@ -52,4 +52,7 @@ public enum Platform
     Windows = 0b00000001,
     Linux = 0b00000100,
     MacOS = 0b00000010,
+    AndroidPhone = 0b00001000,
+    AndroidPad = 0b00010000,
+    AndroidWatch = 0b00100000,
 }
