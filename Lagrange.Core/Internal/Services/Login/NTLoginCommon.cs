@@ -1,7 +1,8 @@
-﻿using Lagrange.Core.Common;
+using Lagrange.Core.Common;
 using Lagrange.Core.Internal.Packets.Login;
 using Lagrange.Core.Utility;
 using Lagrange.Core.Utility.Cryptography;
+using Lagrange.Core.Utility.Extension;
 using Lagrange.Proto;
 
 namespace Lagrange.Core.Internal.Services.Login;
@@ -123,9 +124,9 @@ internal static class NTLoginCommon
             },
             AppInfo = new NTLoginAppInfo
             {
-                Version = context.AppInfo.Kernel,
+                Version = context.Config.Protocol.IsAndroid() ? context.AppInfo.CurrentVersion : context.AppInfo.Kernel,
                 AppId = context.AppInfo.AppId,
-                AppName = context.AppInfo.PackageName,
+                AppName = context.Config.Protocol.IsAndroid() ? $"{context.AppInfo.PackageName}.{context.AppInfo.PtVersion}" : context.AppInfo.PackageName,
                 Qua = context.AppInfo.Qua,
             },
             SdkInfo = new NTLoginSdkInfo { Version = 1 },

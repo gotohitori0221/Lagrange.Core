@@ -1,10 +1,12 @@
-using System;
+﻿﻿﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,11 +16,8 @@ using Lagrange.Milky.Serialization;
 
 namespace Lagrange.Milky.Signing;
 
-public sealed class HttpSigner : BotSignProvider, IDisposable
+public sealed class HttpSigner : AndroidBotSignProvider, IDisposable
 {
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "WhiteListCommand")]
-    private static extern ref HashSet<string> GetPCWhiteListCommand([UnsafeAccessorType("Lagrange.Core.Common.DefaultBotSignProvider, Lagrange.Core")] object? _);
-
     private readonly long _uin;
 
     private readonly HttpClient _http;
@@ -42,7 +41,7 @@ public sealed class HttpSigner : BotSignProvider, IDisposable
         };
     }
 
-    public override bool IsWhiteListCommand(string cmd) => GetPCWhiteListCommand(null).Contains(cmd);
+    public override bool IsWhiteListCommand(string cmd) => WhiteListCommand.Contains(cmd);
 
     public override async Task<SsoSecureInfo?> GetSecSign(long uin, string cmd, int seq, ReadOnlyMemory<byte> body)
     {
@@ -71,11 +70,13 @@ public sealed class HttpSigner : BotSignProvider, IDisposable
         if (result == null) throw new Exception("Signer response serialization failed");
         if (result.Code != 0) throw new Exception($"Signer server exception: ({result.Code}){result.Message}");
 
+        static byte[]? FromHexOrNull(string? hex) => string.IsNullOrEmpty(hex) ? null : Convert.FromHexString(hex);
+
         return new SsoSecureInfo
         {
-            SecSign = Convert.FromHexString(result.Value.SecSign),
-            SecToken = Convert.FromHexString(result.Value.SecToken),
-            SecExtra = Convert.FromHexString(result.Value.SecExtra),
+            SecSign = FromHexOrNull(result.Value.SecSign),
+            SecToken = FromHexOrNull(result.Value.SecToken),
+            SecExtra = FromHexOrNull(result.Value.SecExtra),
         };
     }
 
@@ -83,6 +84,45 @@ public sealed class HttpSigner : BotSignProvider, IDisposable
     
     
     
+    public override async Task<byte[]> GetEnergy(long uin, string data)
+    {
+        var payload = new JsonObject
+        {
+            ["uin"] = uin,
+            ["data"] = data,
+            ["guid"] = Convert.ToHexString(Context.Keystore.Guid),
+            ["ver"] = Context.AppInfo.SdkInfo.SdkVersion,
+            ["version"] = Context.AppInfo.PtVersion,
+            ["qua"] = Context.AppInfo.Qua
+        };
+
+        var response = await _http.PostAsync("energy", new StringContent(payload.ToJsonString(), Encoding.UTF8, MediaTypeNames.Application.Json));
+        response.EnsureSuccessStatusCode();
+
+        using var stream = await response.Content.ReadAsStreamAsync();
+        var content = await Serializer.JsonDeserializeAsync<SignerDataResponse<string>>(stream);
+        return content == null ? [] : Convert.FromHexString(content.Value);
+    }
+
+    public override async Task<byte[]> GetDebugXwid(long uin, string data)
+    {
+        var payload = new JsonObject
+        {
+            ["uin"] = uin,
+            ["data"] = data,
+            ["guid"] = Convert.ToHexString(Context.Keystore.Guid),
+            ["version"] = Context.AppInfo.PtVersion,
+            ["qua"] = Context.AppInfo.Qua
+        };
+
+        var response = await _http.PostAsync("get_tlv553", new StringContent(payload.ToJsonString(), Encoding.UTF8, MediaTypeNames.Application.Json));
+        response.EnsureSuccessStatusCode();
+
+        using var stream = await response.Content.ReadAsStreamAsync();
+        var content = await Serializer.JsonDeserializeAsync<SignerDataResponse<string>>(stream);
+        return content == null ? [] : Convert.FromHexString(content.Value);
+    }
+
     public static async Task<BotAppInfo?> FetchAppInfoAsync(LagrangeConfiguration configuration, CancellationToken ct = default)
     {
         using var http = new HttpClient(new HttpClientHandler
@@ -170,6 +210,11 @@ public class AppInfoSdkInfo
     [JsonPropertyName("misc_bit_map")] public uint MiscBitMap { get; init; }
     [JsonPropertyName("sub_sig_map")] public uint SubSigMap { get; init; }
     [JsonPropertyName("main_sig_map")] public long MainSigMap { get; init; }
+}
+
+public class SignerDataResponse<T>
+{
+    [JsonPropertyName("data")] public required T Value { get; init; }
 }
 
 public class SignerResponse<T>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -13,8 +13,8 @@ namespace Lagrange.Milky.Captcha;
 
 public class OnlineCaptchaResolver(ILogger<OnlineCaptchaResolver> logger, LagrangeConfiguration configuration) : ICaptchaResolver
 {
-    private const string Url = "https://captcha.lagrangecore.org/?{0}";
-    private const string QueryUrl = "https://backend.captcha.lagrangecore.org/get_captcha?uin={0}";
+    private const string Url = "https://captcha.bocchi.top/captcha?{0}";
+    private const string QueryUrl = "https://captcha.bocchi.top/get_captcha?uin={0}";
 
     private readonly ILogger<OnlineCaptchaResolver> _logger = logger;
 

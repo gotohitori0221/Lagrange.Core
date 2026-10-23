@@ -10,17 +10,8 @@ public abstract class AndroidBotSignProvider : BotSignProvider
     public abstract Task<byte[]> GetEnergy(long uin, string data);
 
     public abstract Task<byte[]> GetDebugXwid(long uin, string data);
-}
 
-internal class DefaultAndroidBotSignProvider : AndroidBotSignProvider, IDisposable
-{
-    private const string Tag = nameof(DefaultAndroidBotSignProvider);
-
-    private readonly HttpClient _client = new();
-
-    private readonly string _url = "http://127.0.0.1:8081";
-
-    private static readonly HashSet<string> WhiteListCommand =
+    protected static readonly HashSet<string> WhiteListCommand =
     [
         "AvatarInfoSvr.QQHeadUrlReq",
         "CertifiedAccountSvc.certified_account_read.GetFollowList",
@@ -557,6 +548,15 @@ internal class DefaultAndroidBotSignProvider : AndroidBotSignProvider, IDisposab
         "wtlogin_device.login",
         "wtlogin_device.tran_sim_emp"
     ];
+}
+
+internal class DefaultAndroidBotSignProvider : AndroidBotSignProvider, IDisposable
+{
+    private const string Tag = nameof(DefaultAndroidBotSignProvider);
+
+    private readonly HttpClient _client = new();
+
+    private readonly string _url = "http://127.0.0.1:8081";
 
     public override bool IsWhiteListCommand(string cmd) => WhiteListCommand.Contains(cmd);
 
@@ -570,7 +570,7 @@ internal class DefaultAndroidBotSignProvider : AndroidBotSignProvider, IDisposab
             ["buffer"] = Convert.ToHexString(body.Span),
             ["guid"] = Convert.ToHexString(Context.Keystore.Guid),
             ["version"] = Context.AppInfo.PtVersion,
-            ["qua"] = "V1_AND_SQ_9.2.20_11650_YYB_D"
+            ["qua"] = "V1_AND_SQ_9.3.70_16410_YYB_D"
         };
 
         var response = await _client.PostAsync($"{_url}/sign", new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json"));
@@ -596,7 +596,7 @@ internal class DefaultAndroidBotSignProvider : AndroidBotSignProvider, IDisposab
             ["guid"] = Convert.ToHexString(Context.Keystore.Guid),
             ["ver"] = Context.AppInfo.SdkInfo.SdkVersion,
             ["version"] = Context.AppInfo.PtVersion,
-            ["qua"] = "V1_AND_SQ_9.2.20_11650_YYB_D"
+            ["qua"] = "V1_AND_SQ_9.3.70_16410_YYB_D"
         };
 
         var response = await _client.PostAsync($"{_url}/energy", new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json"));
@@ -614,7 +614,7 @@ internal class DefaultAndroidBotSignProvider : AndroidBotSignProvider, IDisposab
             ["data"] = data,
             ["guid"] = Convert.ToHexString(Context.Keystore.Guid),
             ["version"] = Context.AppInfo.PtVersion,
-            ["qua"] = "V1_AND_SQ_9.2.20_11650_YYB_D"
+            ["qua"] = "V1_AND_SQ_9.3.70_16410_YYB_D"
         };
 
         var response = await _client.PostAsync($"{_url}/get_tlv553", new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json"));

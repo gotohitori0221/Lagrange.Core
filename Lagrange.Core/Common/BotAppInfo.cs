@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8618
+#pragma warning disable CS8618
 
 namespace Lagrange.Core.Common;
 
@@ -124,18 +124,18 @@ public class BotAppInfo
     private static readonly BotAppInfo AndroidPad = new()
     {
         Os = "ANDROID",
-        CurrentVersion = "9.2.20.777b5929",
-        PtVersion = "9.2.20",
-        Qua = "V1_AND_SQ_9.2.20_11650_YYB_D",
+        CurrentVersion = "9.3.70.41925",
+        PtVersion = "9.3.70",
+        Qua = "V1_AND_SQ_9.3.70_16410_YYB_D",
         AppId = 16,
-        SubAppId = 537315825,
+        SubAppId = 537395477,
         SsoVersion = 22,
         PackageName = "com.tencent.mobileqq",
         ApkSignatureMd5 = [0xA6, 0xB7, 0x45, 0xBF, 0x24, 0xA2, 0xC2, 0x77, 0x52, 0x77, 0x16, 0xF6, 0xF3, 0x6E, 0xB6, 0x8D],
         SdkInfo = new WtLoginSdkInfo
         {
-            SdkBuildTime = 1757058014,
-            SdkVersion = "6.0.0.2589",
+            SdkBuildTime = 1769366884,
+            SdkVersion = "6.0.0.2591",
             MiscBitMap = 150470524,
             SubSigMap = 66560,
             MainSigMap = Sig.WLOGIN_A5 | Sig.WLOGIN_RESERVED | Sig.WLOGIN_STWEB | Sig.WLOGIN_A2 | Sig.WLOGIN_ST | Sig.WLOGIN_LSKEY | Sig.WLOGIN_SKEY | Sig.WLOGIN_SIG64 | Sig.WLOGIN_VKEY | Sig.WLOGIN_D2 | Sig.WLOGIN_SID | Sig.WLOGIN_PSKEY | Sig.WLOGIN_AQSIG | Sig.WLOGIN_LHSIG | Sig.WLOGIN_PAYTOKEN | (Sig)65536

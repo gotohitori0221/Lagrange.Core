@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -56,6 +56,7 @@ public static partial class Serializer
     [JsonSerializable(typeof(SecSignRequest))]
     [JsonSerializable(typeof(SignerResponse<SecSignResult>))]
     [JsonSerializable(typeof(SignerResponse<AppInfoResult>))]
+    [JsonSerializable(typeof(SignerDataResponse<string>))]
     
     [JsonSerializable(typeof(MilkyApiResponse))]
     [JsonSerializable(typeof(object))]

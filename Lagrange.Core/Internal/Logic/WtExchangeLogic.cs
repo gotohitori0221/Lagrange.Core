@@ -268,6 +268,8 @@ internal class WtExchangeLogic : ILogic, IDisposable
             {
                 _context.Keystore.Uin = uin;
                 if (_context.Keystore.State.KeyExchangeSession is null && !await KeyExchange()) return false;
+                _context.Keystore.WLoginSigs.TgtgtKey = new byte[16];
+                Random.Shared.NextBytes(_context.Keystore.WLoginSigs.TgtgtKey);
 
                 var result = await _context.EventContext.SendEvent<PasswordLoginEventResp>(new PasswordLoginEventReq(password, null));
                 while (true)
