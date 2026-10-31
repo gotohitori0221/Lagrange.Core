@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Lagrange.Core.Common;
+using Lagrange.Core.Exceptions;
 using Lagrange.Core.Internal.Events.Message;
 using Lagrange.Core.Internal.Logic;
 using Lagrange.Core.Internal.Packets.Message;
@@ -55,7 +56,11 @@ internal class LongMsgRecvService : BaseService<LongMsgRecvEventReq, LongMsgRecv
     protected override async ValueTask<LongMsgRecvEventResp> Parse(ReadOnlyMemory<byte> input, BotContext context)
     {
         var rsp = ProtoHelper.Deserialize<LongMsgInterfaceRsp>(input.Span);
-        
+        if (rsp.RecvRsp is null || rsp.RecvRsp.Payload is not { Length: > 0 })
+        {
+            throw new OperationException(-1, "Failed to fetch forward message content: empty payload");
+        }
+
         await using var src = new MemoryStream(rsp.RecvRsp.Payload);
         await using var dest = new MemoryStream();
         await using var gzip = new GZipStream(src, CompressionMode.Decompress);

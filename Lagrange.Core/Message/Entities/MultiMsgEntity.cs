@@ -57,10 +57,18 @@ public class MultiMsgEntity(string? resId) : IMessageEntity
     {
         if (string.IsNullOrEmpty(ResId)) return;
 
-        bool isGroup = message.Contact is BotGroupMember;
-        var result = await context.EventContext.SendEvent<LongMsgRecvEventResp>(new LongMsgRecvEventReq(isGroup, ResId));
-        Messages.Clear();
-        Messages.AddRange(result.Messages);
+        try
+        {
+            bool isGroup = message.Contact is BotGroupMember;
+            var result = await context.EventContext.SendEvent<LongMsgRecvEventResp>(new LongMsgRecvEventReq(isGroup, ResId));
+            Messages.Clear();
+            Messages.AddRange(result.Messages);
+        }
+        catch (Exception e)
+        {
+            // 转发记录拉取失败时保留卡片本身，不要因为子消息解析失败而丢掉整条消息
+            context.LogWarning("MultiMsgEntity", $"Failed to fetch forward messages (resId: {ResId}): {e.Message}");
+        }
     }
     
     string IMessageEntity.ToPreviewString() => "[聊天记录]";

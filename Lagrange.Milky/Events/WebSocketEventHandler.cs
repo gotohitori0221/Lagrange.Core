@@ -110,10 +110,12 @@ public sealed class WebSocketEventHandler : IHttpHandler, IGenericEventHandler, 
         }
         catch (Exception e)
         {
-            _logger.LogKeepAliveError(id, e);
-
             if (_wss.Remove(id, out var connectContext)) connectContext.SendLock.Dispose();
             ws.Dispose();
+
+            // 客户端主动断开在 HttpListener 下会抛 WebSocketException(1229)，属于正常行为
+            if (e is WebSocketException) _logger.LogDisconnect(id);
+            else _logger.LogKeepAliveError(id, e);
         }
     }
 
