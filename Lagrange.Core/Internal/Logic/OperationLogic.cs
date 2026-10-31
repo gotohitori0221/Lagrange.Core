@@ -427,9 +427,26 @@ internal class OperationLogic(BotContext context) : ILogic
         return response.Requests;
     }
 
-    public async Task<BotStranger> FetchStranger(long uid)
+    public async Task<BotStranger> FetchStranger(long uin)
     {
-        var req = new FetchStrangerByUinEventReq(uid);
+        // Android 协议下 0xFE1_2 只接受 uid（openid），传 uin 会返回 316
+        if (context.Config.Protocol.IsAndroid())
+        {
+            string? uid = uin == context.BotUin ? context.Keystore.Uid : context.CacheContext.ResolveCachedUid(uin);
+            if (string.IsNullOrEmpty(uid))
+            {
+                await context.CacheContext.GetFriendList();
+                uid = context.CacheContext.ResolveCachedUid(uin);
+            }
+
+            if (!string.IsNullOrEmpty(uid))
+            {
+                var uidResp = await context.EventContext.SendEvent<FetchStrangerEventResp>(new FetchStrangerByUidEventReq(uid));
+                return uidResp.Stranger;
+            }
+        }
+
+        var req = new FetchStrangerByUinEventReq(uin);
         var resp = await context.EventContext.SendEvent<FetchStrangerEventResp>(req);
         return resp.Stranger;
     }
