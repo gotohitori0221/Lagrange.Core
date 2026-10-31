@@ -82,21 +82,23 @@ public ref struct ProtoReader
     [MethodImpl(MethodImplOptions.NoInlining)]
     private unsafe T DecodeVarIntSlowPath<T>() where T : unmanaged, INumber<T>
     {
+        // protobuf 允许 int32/int64 的负数以 10 字节 varint 编码，
+        // 因此不能按 sizeof(T) 提前终止，必须一直读到终止字节再截断。
+        ulong result = 0;
         int shift = 0;
-        T result = T.Zero;
-        do
+        while (true)
         {
+            if (_offset >= _length) ThrowHelper.ThrowInvalidDataException_MalformedMessage();
+
             byte b = Unsafe.Add(ref _first, _offset++);
-            result += T.CreateTruncating((ulong)(b & 0x7Fu) << shift);
+            result |= (ulong)(b & 0x7Fu) << shift;
             if (b <= 0x7F)
             {
-                return result;
+                return T.CreateTruncating(result);
             }
             shift += 7;
+            if (shift >= 70) ThrowHelper.ThrowInvalidDataException_MalformedMessage();
         }
-        while (shift < sizeof(T) << 3);
-        ThrowHelper.ThrowInvalidDataException_MalformedMessage();
-        return result;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -115,6 +117,8 @@ public ref struct ProtoReader
         {
             ulong b = Unsafe.As<byte, ulong>(ref Unsafe.Add(ref _first, _offset));
             ulong msbs = ~b & ~0x7f7f7f7f7f7f7f7ful;
+            if (msbs == 0) return DecodeVarIntSlowPath<T>(); // 8 字节内没有终止位，可能是 10 字节的负数 varint
+
             ulong varintPart = b & (msbs ^ msbs - 1);
 
             _offset += (BitOperations.TrailingZeroCount(msbs) + 1) >> 3; 
@@ -148,7 +152,8 @@ public ref struct ProtoReader
             
             ulong msbs0 = ~b0 & ~0x7f7f7f7f7f7f7f7ful;
             ulong msbs1 = ~b1 & ~0x7f7f7f7f7f7f7f7ful;
-            
+            if (msbs0 == 0 && msbs1 == 0) return DecodeVarIntSlowPath<T>(); // 16 字节内没有终止位，交给慢路径报错
+
             int len0 = BitOperations.TrailingZeroCount(msbs0) + 1; 
             ulong varintPart0 = b0 & (msbs0 ^ msbs0 - 1);
             ulong varintPart1;
@@ -400,6 +405,7 @@ public ref struct ProtoReader
     private void SkipLengthDelimited()
     {
         int length = DecodeVarInt<int>();
+        if (length < 0) ThrowHelper.ThrowInvalidDataException_MalformedMessage();
         if (_length - _offset < length) ThrowHelper.ThrowArgumentOutOfRangeException_NoEnoughSpace(nameof(SkipLengthDelimited), length, _length - _offset);
         
         _offset += length;

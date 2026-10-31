@@ -27,7 +27,8 @@ public class ProtoArrayConverter : ProtoConverter<ProtoArray>
         {
             var value = converter.Read(field, wireType, ref reader);
             array.Add(new ProtoValue<ProtoRawValue>(value, wireType));
-            
+
+            if (reader.IsCompleted) return array;
             if ((tag = reader.DecodeVarInt<int>() >> 3) != field) break;
         }
 

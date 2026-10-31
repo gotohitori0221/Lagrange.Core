@@ -323,6 +323,11 @@ public class ProtoMapFieldInfo<TMap, TKey, TValue>(int field, WireType keyWireTy
             }
             
             map.Add(key, value);
+            if (reader.IsCompleted)
+            {
+                _typedSet(target, map);
+                return;
+            }
             if ((tag = reader.DecodeVarInt<int>() >> 3) != Field) break;
         }
 
