@@ -427,6 +427,22 @@ internal class OperationLogic(BotContext context) : ILogic
         return response.Requests;
     }
 
+    public async Task<string?> ResolveUid(long uin)
+    {
+        if (uin == context.BotUin) return context.Keystore.Uid;
+
+        var uid = context.CacheContext.ResolveCachedUid(uin);
+        if (!string.IsNullOrEmpty(uid)) return uid;
+
+        await context.CacheContext.GetFriendList();
+
+        uid = context.CacheContext.ResolveCachedUid(uin);
+        if (!string.IsNullOrEmpty(uid)) return uid;
+
+        // 非好友（例如群成员）需要在 bot 已加入的群成员列表中查找
+        return await context.CacheContext.ResolveUidFromGroups(uin);
+    }
+
     public async Task<BotStranger> FetchStranger(long uin)
     {
         // Android 协议下 0xFE1_2 只接受 uid（openid），传 uin 会返回 316
@@ -442,13 +458,20 @@ internal class OperationLogic(BotContext context) : ILogic
             if (!string.IsNullOrEmpty(uid))
             {
                 var uidResp = await context.EventContext.SendEvent<FetchStrangerEventResp>(new FetchStrangerByUidEventReq(uid));
-                return uidResp.Stranger;
+
+                // 0xFE1_2 的响应不含 uid，回填请求时使用的 uid
+                var stranger = uidResp.Stranger;
+                stranger.SetUid(uid);
+                return stranger;
             }
         }
 
         var req = new FetchStrangerByUinEventReq(uin);
         var resp = await context.EventContext.SendEvent<FetchStrangerEventResp>(req);
-        return resp.Stranger;
+
+        var result = resp.Stranger;
+        if (string.IsNullOrEmpty(result.Uid)) result.SetUid(context.CacheContext.ResolveCachedUid(result.Uin));
+        return result;
     }
 
     public async Task SetGroupNotification(long groupUin, ulong sequence, BotGroupNotificationType type, bool isFiltered, GroupNotificationOperate operate, string message)

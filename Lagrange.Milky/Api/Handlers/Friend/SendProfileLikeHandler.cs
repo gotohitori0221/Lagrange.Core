@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,23 +14,7 @@ public sealed class SendProfileLikeHandler(BotContext lagrange) : INoResultApiHa
 
     public async ValueTask<MilkyApiResponse> HandleAsync(Request request, CancellationToken ct)
     {
-        string? uid = null;
-        var friends = await _lagrange.FetchFriends().WaitAsync(ct);
-        var friend = friends.FirstOrDefault(f => f.Uin == request.UserId);
-        if (friend != null)
-        {
-            uid = friend.Uid;
-        }
-        else
-        {
-            try
-            {
-                var stranger = await _lagrange.FetchStranger(request.UserId).WaitAsync(ct);
-                if (!string.IsNullOrEmpty(stranger.Uid)) uid = stranger.Uid;
-            }
-            catch { }
-        }
-
+        var uid = await _lagrange.ResolveUid(request.UserId).WaitAsync(ct);
         if (string.IsNullOrEmpty(uid)) return new MilkyApiResponse(-404, "User not found");
 
         await _lagrange.SendProfileLike(uid, (uint)request.Count).WaitAsync(ct);

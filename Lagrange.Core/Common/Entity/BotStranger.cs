@@ -6,7 +6,11 @@ public class BotStranger(long uin, string nickname, string uid, string personalS
 
     public override string Nickname { get; } = nickname ?? string.Empty;
 
-    public override string Uid { get; } = uid ?? string.Empty;
+    public override string Uid => _uid;
+
+    private string _uid = uid ?? string.Empty;
+
+    internal void SetUid(string? value) => _uid = value ?? string.Empty;
 
     public string PersonalSign { get; } = personalSign;
 

@@ -123,13 +123,45 @@ internal class CacheContext(BotContext context)
 
     private void CacheStranger(BotStranger stranger)
     {
-        _strangersWithUin[ stranger.Uin] = stranger;
+        _strangersWithUin[stranger.Uin] = stranger;
+
+        // 0xFE1_2 的响应不返回 uid，此时 Uid 为空，不能写入反查表
+        if (string.IsNullOrEmpty(stranger.Uid)) return;
+
         _strangersWithUid[stranger.Uid] = stranger;
         _uidToUin[stranger.Uid] = stranger.Uin;
         _uinToUid[stranger.Uin] = stranger.Uid;
     }
 
     public string? ResolveCachedUid(long uin) => _uinToUid.GetValueOrDefault(uin);
+
+    /// <summary>
+    /// 在好友与已加入群的成员中解析 uid，必要时会拉取群成员列表。
+    /// 第一次未命中时会强制刷新群列表和成员列表，以覆盖新入群的成员。
+    /// </summary>
+    public async Task<string?> ResolveUidFromGroups(long uin)
+    {
+        if (_uinToUid.TryGetValue(uin, out string? uid)) return uid;
+
+        foreach (var group in await GetGroupList())
+        {
+            if (_uinToUid.TryGetValue(uin, out uid)) return uid;
+
+            await GetMemberList(group.GroupUin);
+
+            if (_uinToUid.TryGetValue(uin, out uid)) return uid;
+        }
+
+        // 缓存里的成员可能已经过期（例如新入群），强刷一轮
+        foreach (var group in await GetGroupList(true))
+        {
+            await GetMemberList(group.GroupUin, true);
+
+            if (_uinToUid.TryGetValue(uin, out uid)) return uid;
+        }
+
+        return uid;
+    }
 
     public async Task<string?> ResolveGroupMemberUidAsync(long groupUin, long targetUin)
     {

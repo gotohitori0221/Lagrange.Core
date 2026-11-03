@@ -97,6 +97,9 @@ public static class OperationExt
     public static Task<bool> SetFriendRequest(this BotContext context, string targetUid, bool accept) =>
         context.EventContext.GetLogic<OperationLogic>().SetFriendRequest(targetUid, accept);
 
+    public static Task<string?> ResolveUid(this BotContext context, long uin) =>
+        context.EventContext.GetLogic<OperationLogic>().ResolveUid(uin);
+
     public static Task<bool> SendProfileLike(this BotContext context, string targetUid, uint count = 1) =>
         context.EventContext.GetLogic<OperationLogic>().SendProfileLike(targetUid, count);
 
