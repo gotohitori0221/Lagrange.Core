@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lagrange.Core.Common.Entity;
 using Lagrange.Core.Common.Interface;
+using Lagrange.Core.Exceptions;
 using Lagrange.Core.Message;
 using Lagrange.Core.Message.Entities;
 using Lagrange.Milky.Extensions;
@@ -169,22 +170,35 @@ public partial class MilkyConverter
 
     private async Task<ReplyIncomingSegment> ToReplyIncomingSegmentAsync(ReplyEntity reply, MessageType type, long ownerPeerUin, CancellationToken ct = default)
     {
-        var message = _cache.Get(type, ownerPeerUin, reply.SrcSequence)
-            ?? _store.Get(type, ownerPeerUin, reply.SrcSequence)
-            ?? (type switch
+        BotMessage? message = _cache.Get(type, ownerPeerUin, reply.SrcSequence)
+            ?? _store.Get(type, ownerPeerUin, reply.SrcSequence);
+
+        if (message == null)
+        {
+            try
             {
-                MessageType.Private => await _lagrange.GetC2CMessage(
-                    ownerPeerUin,
-                    reply.SrcSequence,
-                    reply.SrcSequence
-                ).WaitAsync(ct),
-                MessageType.Group => await _lagrange.GetGroupMessage(
-                    ownerPeerUin,
-                    reply.SrcSequence,
-                    reply.SrcSequence
-                ).WaitAsync(ct),
-                _ => throw new NotSupportedException(),
-            }).FirstOrDefault();
+                message = (type switch
+                {
+                    MessageType.Private => await _lagrange.GetC2CMessage(
+                        ownerPeerUin,
+                        reply.SrcSequence,
+                        reply.SrcSequence
+                    ).WaitAsync(ct),
+                    MessageType.Group => await _lagrange.GetGroupMessage(
+                        ownerPeerUin,
+                        reply.SrcSequence,
+                        reply.SrcSequence
+                    ).WaitAsync(ct),
+                    _ => throw new NotSupportedException(),
+                }).FirstOrDefault();
+            }
+            catch (OperationException)
+            {
+                // 被引用的消息可能已被撤回或已过期（服务端返回 msgstorage rsp msgs size is empty），
+                // 此时只保留回复本身，避免整条消息事件转换失败
+                message = null;
+            }
+        }
 
         
         if (message == null)
