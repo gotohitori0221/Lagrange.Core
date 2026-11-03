@@ -85,7 +85,8 @@ internal class PacketContext
                     }
                 }
 
-                await _context.SocketContext.Send(frame);
+                int sent = await _context.SocketContext.Send(frame);
+                if (sent <= 0) throw new InvalidOperationException("Failed to send the packet: the socket is not connected.");
             }
             catch (Exception e)
             {

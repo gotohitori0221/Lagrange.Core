@@ -41,6 +41,8 @@ internal class WtExchangeLogic : ILogic, IDisposable
 
     private TaskCompletionSource<string>? _smsSource;
 
+    private int _reconnecting;
+
     private HttpClient? _client;
 
     public WtExchangeLogic(BotContext context)
@@ -416,8 +418,47 @@ internal class WtExchangeLogic : ILogic, IDisposable
 
     private void OnHeartBeat(object? state) => Task.Run(async () =>
     {
-        await _context.EventContext.SendEvent<AliveEvent>(new AliveEvent());
+        if (!_context.SocketContext.Connected)
+        {
+            await TryReconnect();
+            return;
+        }
+
+        try
+        {
+            await _context.EventContext.SendEvent<AliveEvent>(new AliveEvent()).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        catch (Exception e) when (e is TimeoutException or OperationCanceledException or LagrangeException)
+        {
+            // 心跳失败不影响流程，下一次定时器会再次检查连接状态
+        }
     });
+
+    private async Task TryReconnect()
+    {
+        if (!_context.Config.AutoReconnect) return;
+        if (Interlocked.Exchange(ref _reconnecting, 1) == 1) return;
+
+        try
+        {
+            _context.LogWarning(Tag, "Socket disconnected, reconnecting...");
+            _context.IsOnline = false;
+
+            if (await _context.SocketContext.Connect())
+            {
+                if (await Online()) _context.LogInfo(Tag, "Reconnected to the server");
+                else _context.LogWarning(Tag, "Failed to resume the session after reconnect");
+            }
+        }
+        catch (Exception e)
+        {
+            _context.LogWarning(Tag, "Reconnect failed", e);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _reconnecting, 0);
+        }
+    }
 
     private void OnSsoHeartBeat(object? state) => Task.Run(async () =>
     {

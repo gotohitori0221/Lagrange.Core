@@ -107,6 +107,11 @@ public class HttpApiHandler(IServiceScopeFactory scopeFactory, ILogger<HttpApiHa
             {
                 response = await handler.HandleAsync(request, ct);
             }
+            catch (OperationCanceledException)
+            {
+                // 关闭或客户端断开导致取消，交给外层统一记录为 request cancelled
+                throw;
+            }
             catch (Exception e)
             {
                 _logger.LogApiException(id, e);

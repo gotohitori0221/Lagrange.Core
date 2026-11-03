@@ -125,8 +125,19 @@ public class LoginService(IHostEnvironment environment, ILogger<LoginService> lo
     {
         _lagrange.EventInvoker.UnregisterEvent<BotRefreshKeystoreEvent>(OnRefreshKeystore);
 
-        _cts?.Cancel();
-        await _lagrange.Logout().WaitAsync(ct);
+        try
+        {
+            // 关闭时宿主传入的 token 往往已经取消，这里给注销单独留出一点时间
+            await _lagrange.Logout().WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None);
+        }
+        catch (Exception e) when (e is TimeoutException or OperationCanceledException)
+        {
+            _logger.LogLogoutTimeout();
+        }
+        finally
+        {
+            _cts?.Cancel();
+        }
     }
 }
 
@@ -155,4 +166,7 @@ public static partial class LagrangeLoginServiceLoggerExtension
 
     [LoggerMessage(LogLevel.Information, "Bot Uin: {Uin}")]
     public static partial void LogLoginSuccess(this ILogger<LoginService> logger, long uin);
+
+    [LoggerMessage(LogLevel.Warning, "Logout did not complete during shutdown, proceeding to exit")]
+    public static partial void LogLogoutTimeout(this ILogger<LoginService> logger);
 }
