@@ -20,23 +20,24 @@ internal class PushLogic(BotContext ctx) : ILogic
         var hasContent = msgEvt.MsgPush.CommonMessage.MessageBody?.MsgContent is not null;
         var content = msgEvt.MsgPush.CommonMessage.MessageBody?.MsgContent;
 
-        if (_processors.TryGetValue(new MsgMatchKey(msgType, subType, hasContent), out var handlers))
+        if (await Dispatch(msgEvt, msgType, subType, hasContent, content)) return;
+        if (await Dispatch(msgEvt, msgType, -1, hasContent, content)) return;
+
+        // 兜底：部分通知的 MsgContent 可能为空，处理器注册的 requireContent 与实际不符时仍应有机会自行判断
+        if (await Dispatch(msgEvt, msgType, subType, !hasContent, content)) return;
+        if (await Dispatch(msgEvt, msgType, -1, !hasContent, content)) return;
+    }
+
+    private async ValueTask<bool> Dispatch(PushMessageEvent msgEvt, MsgType msgType, int subType, bool requireContent, ReadOnlyMemory<byte>? content)
+    {
+        if (!_processors.TryGetValue(new MsgMatchKey(msgType, subType, requireContent), out var handlers)) return false;
+
+        foreach (var handler in handlers)
         {
-            foreach (var handler in handlers)
-            {
-                if (await handler.Handle(ctx, msgType, subType, msgEvt, content))
-                    return;
-            }
+            if (await handler.Handle(ctx, msgType, subType, msgEvt, content)) return true;
         }
 
-        if (_processors.TryGetValue(new MsgMatchKey(msgType, -1, hasContent), out handlers))
-        {
-            foreach (var handler in handlers)
-            {
-                if (await handler.Handle(ctx, msgType, subType, msgEvt, content))
-                    return;
-            }
-        }
+        return false;
     }
 }
 

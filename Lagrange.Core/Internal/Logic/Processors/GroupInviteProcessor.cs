@@ -20,7 +20,12 @@ internal class GroupInviteProcessor : MsgPushProcessorBase
     internal override async ValueTask<bool> Handle(BotContext context, MsgType msgType, int subType,
         PushMessageEvent msgEvt, ReadOnlyMemory<byte>? content)
     {
-        if (content is not { Length: > 0 }) return false;
+        if (content is not { Length: > 0 })
+        {
+            context.LogWarning(nameof(PushLogic), "Received GroupInviteNotification without content, skipped");
+            return false;
+        }
+
         var @event = ProtoHelper.Deserialize<Event0x20D>(content.Value.Span);
         if (@event.SubType != 87) return false;
 

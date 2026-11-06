@@ -19,7 +19,12 @@ internal class GroupJoinProcessor : MsgPushProcessorBase
 
     internal override async ValueTask<bool> Handle(BotContext context, MsgType msgType, int subType, PushMessageEvent msgEvt, ReadOnlyMemory<byte>? content)
     {
-        if (content is not { Length: > 0 }) return false;
+        if (content is not { Length: > 0 })
+        {
+            context.LogWarning(nameof(PushLogic), "Received GroupJoinNotification without content, skipped");
+            return false;
+        }
+
         var join = ProtoHelper.Deserialize<GroupJoin>(content.Value.Span);
 
         foreach (var delay in RetryDelays)
